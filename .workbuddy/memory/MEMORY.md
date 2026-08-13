@@ -68,6 +68,12 @@ Godot 4 的 2D 像素卡通任天堂风快递公司模拟经营游戏。规划�
 - **沙盒参数**：`GameManager.sandbox_cfg{funds_mult, events, competition}`；MainMenu 沙盒模式显示参数区；竞争 0 时无初始对手。
 - **胜利条件**：仅 rating()=="S" 且 Day≥40 通关（A 不结束）。
 
+## 订单体验与多策略平衡（v0.10）
+
+- **OrderPanel**：四色状态 chips + 按状态分组 + 货种图标（`CargoType.icon_of()`）+ 剩余时限（≤2 天橙色高亮 + ⚠）+ 分配车辆名。
+- **balance_sim `--strategy=van|truck|mix`**（`OS.get_cmdline_user_args()`）：多策略对比发现货车原配置是陷阱（18 万/辆 → 只买得起 1 辆 → 破产）。调优：货车 14 万/95 速/700km 日。
+- **每种车辆都要有独立策略可玩性** — 多策略长局模拟是发现"车型陷阱"的唯一手段。
+
 ## 工具脚本
 
 - `tools/bake_land.py` — 从 Natural Earth 50m land 烘焙区域陆地多边形 JSON

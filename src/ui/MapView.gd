@@ -458,9 +458,9 @@ func _draw() -> void:
 		var p2 := to_screen(RegionManager.local(city))
 		_draw_building_marker(p2, Assets.get_image("bld_station"))
 
-	# 8. 订单流光线（仅进行中订单）
+	# 8. 订单路线（v0.11）：待分配 = 橙色虚线（无车可接，提醒买/派车），在途 = 蓝色实线 + 流动光点
 	for o in GameManager.orders:
-		if o.status != Order.Status.INTRANSIT:
+		if o.status != Order.Status.PENDING and o.status != Order.Status.INTRANSIT:
 			continue
 		var oc := RegionManager.current.get_city(o.origin_id)
 		var dc := RegionManager.current.get_city(o.dest_id)
@@ -468,13 +468,16 @@ func _draw() -> void:
 			continue
 		var a := to_screen(RegionManager.local(oc))
 		var d := to_screen(RegionManager.local(dc))
-		draw_line(a, d, Color(1.0, 1.0, 1.0, 0.45), 4.0)
-		var len := a.distance_to(d)
-		var segs: int = maxi(int(len / 18.0), 1)
-		for i in segs:
-			var t := fposmod(float(i) / float(segs) + _dash, 1.0)
-			var pp := a.lerp(d, t)
-			draw_circle(pp, 3.5, UI.ORANGE)
+		if o.status == Order.Status.INTRANSIT:
+			draw_line(a, d, Color(0.25, 0.55, 0.95, 0.55), 4.0)
+			var len := a.distance_to(d)
+			var segs: int = maxi(int(len / 18.0), 1)
+			for i in segs:
+				var t := fposmod(float(i) / float(segs) + _dash, 1.0)
+				var pp := a.lerp(d, t)
+				draw_circle(pp, 3.5, UI.ORANGE)
+		else:
+			_draw_dashed_line(a, d, UI.ORANGE, 2.5)
 
 	# 9. 车辆
 	for v in GameManager.vehicles:
@@ -526,6 +529,21 @@ func _draw_sea_route(r: Dictionary) -> void:
 		draw_circle(pp, 2.5, Color(1.0, 1.0, 1.0, 0.85))
 
 
+## 等距虚线（用于待分配订单路线）
+func _draw_dashed_line(a: Vector2, b: Vector2, color: Color, width: float) -> void:
+	var len := a.distance_to(b)
+	if len < 1.0:
+		return
+	var n := (b - a) / len
+	var dash_len := 10.0
+	var gap_len := 6.0
+	var t := 0.0
+	while t < len:
+		var seg := min(dash_len, len - t)
+		draw_line(a + n * t, a + n * (t + seg), color, width)
+		t += dash_len + gap_len
+
+
 func _draw_building_marker(p: Vector2, tex: Texture2D) -> void:
 	if tex == null:
 		return
@@ -555,13 +573,28 @@ func _draw_legend() -> void:
 	if _font == null or RegionManager.current == null:
 		return
 	var reg_name := RegionManager.current.display_name()
-	var txt := "%s  ·  %d 城市  ·  %.1fx  ·  滚轮缩放 / 拖拽平移 / 点击城市建设" % [
-		reg_name, RegionManager.current.cities.size(), zoom]
-	var tw := _font.get_string_size(txt, HORIZONTAL_ALIGNMENT_RIGHT, -1, 12).x + 16
-	var bb := Rect2(size.x - tw - 16, 12, tw, 22)
+	# 统计订单路线条数
+	var pending_n := 0
+	var intransit_n := 0
+	for o in GameManager.orders:
+		if o.status == Order.Status.PENDING:
+			pending_n += 1
+		elif o.status == Order.Status.INTRANSIT:
+			intransit_n += 1
+	var txt := "%s  ·  %d 城市  ·  %.1fx\n橙虚线 %d 单待派 · 蓝实线 %d 单在途 · 滚轮缩放 / 拖拽 / 点击建设" % [
+		reg_name, RegionManager.current.cities.size(), zoom, pending_n, intransit_n]
+	var lines := txt.split("\n")
+	var tw := 0.0
+	for ln in lines:
+		tw = maxf(tw, _font.get_string_size(ln, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x)
+	tw += 16
+	var bb := Rect2(size.x - tw - 16, 12, tw, 40)
 	draw_rect(bb, UI.CREAM)
 	draw_rect(bb, UI.INK, false, 1.5)
-	draw_string(_font, bb.position + Vector2(8, 16), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, UI.INK)
+	var y := 30.0
+	for ln in lines:
+		draw_string(_font, Vector2(bb.position.x + 8, y), ln, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, UI.INK)
+		y += 15.0
 
 
 func _screen_rect_of_bbox(bbox: Rect2) -> Rect2:

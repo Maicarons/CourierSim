@@ -4,6 +4,10 @@ class_name OrderSystem
 ## 订单系统：每日按市场需求生成订单，自动/手动分配车辆，处理超时失败。
 ## 收益与时限基于真实城市距离计算（Haversine + 绕路系数）。
 
+## 自动派单开关：开启时每日自动把待分配订单派给合适车辆；
+## 关闭后玩家通过订单面板「派单」按钮手动控制（模拟经营标准操控）。
+var auto_assign_enabled := true
+
 func process_day(game: GameManager) -> void:
 	if RegionManager.current == null:
 		return
@@ -104,14 +108,36 @@ func _has_carrier(game: GameManager, cargo: int) -> bool:
 			return true
 	return false
 
-## 自动分配：把待分配订单派给合适的空闲车辆
+## 自动分配：把待分配订单派给合适的空闲车辆（受 auto_assign_enabled 控制）
 func auto_assign(game: GameManager) -> void:
+	if not auto_assign_enabled:
+		return
 	for o in game.orders:
 		if o.status != Order.Status.PENDING:
 			continue
 		var v := find_assignable_vehicle(game, o)
 		if v != null:
 			assign_order(game, v, o)
+
+## 手动派单候选：可承运 + 空闲 + 载重足够的车辆，按距 origin 距离升序
+func assignable_vehicles(game: GameManager, o: Order) -> Array:
+	var list: Array = []
+	var oc: City = RegionManager.current.get_city(o.origin_id)
+	for v in game.vehicles:
+		if v.is_busy():
+			continue
+		if not v.can_carry(o.cargo_type):
+			continue
+		if o.weight_kg > v.capacity_kg:
+			continue
+		var score := 0.0
+		if oc != null:
+			var home: City = RegionManager.current.get_city(v.home_city_id)
+			if home != null:
+				score = GeoMath.city_distance(home, oc) / 1000.0
+		list.append({"vehicle": v, "dist_km": score})
+	list.sort_custom(func(a, b): return a["dist_km"] < b["dist_km"])
+	return list
 
 func find_assignable_vehicle(game: GameManager, o: Order) -> Vehicle:
 	var best: Vehicle = null

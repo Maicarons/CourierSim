@@ -1,8 +1,12 @@
 class_name OrderPanel
 extends VBoxContainer
 
-## 订单标签页（v0.10 增强）：顶部状态概览 chips + 按状态分组（待分配/在途/已送达/超时），
+## 订单标签页（v0.11）：顶部状态概览 chips + 自动派单开关 + 按状态分组，
 ## 每单显示货种图标、路线、重量、距离、奖励、剩余时限（紧迫红字）、分配车辆。
+## 待分配订单带「派单 ▸」按钮 → 手动选择车辆（VehiclePicker）。
+
+var _picker: VehiclePicker
+
 
 func build() -> void:
 	UI.header(self, Localization.t("panel.orders.title"))
@@ -11,6 +15,9 @@ func build() -> void:
 	_build_group(Order.Status.INTRANSIT, Localization.t("order.group.intransit"), UI.BLUE, Assets.get_image("veh_van"))
 	_build_group(Order.Status.DELIVERED, Localization.t("order.group.delivered"), UI.GREEN, Assets.get_image("ui_flag"))
 	_build_group(Order.Status.FAILED, Localization.t("order.group.failed"), Color(0.6, 0.58, 0.52), Assets.get_image("ui_trash"))
+	# 手动派单弹窗挂在本面板内（随 tab 重建销毁）
+	_picker = VehiclePicker.new()
+	add_child(_picker)
 
 
 func _build_summary() -> void:
@@ -30,6 +37,18 @@ func _build_summary() -> void:
 	total.add_theme_font_size_override("font_size", 12)
 	total.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(total)
+	# 自动派单开关（v0.11）：关闭后玩家手动派单
+	var auto := CheckButton.new()
+	auto.button_pressed = GameManager.order_sys.auto_assign_enabled
+	auto.add_theme_color_override("font_color", UI.INK)
+	auto.add_theme_font_size_override("font_size", 13)
+	auto.text = Localization.t("order.auto_assign")
+	Tooltips.attach(auto, Localization.t("tip.auto_assign"))
+	auto.toggled.connect(func(on: bool):
+		GameManager.order_sys.auto_assign_enabled = on
+		EventBus.toast.emit(Localization.t("toast.auto_assign") % (
+			Localization.t("order.auto_on") if on else Localization.t("order.auto_off"))))
+	row.add_child(auto)
 
 
 func _add_chip(parent: Control, label: String, count: int, color: Color) -> void:
@@ -77,11 +96,27 @@ func _build_order_row(o: Order, accent: Color) -> void:
 			parts.append(Localization.t("order.timeout_day") % o.deadline_day)
 	var sub := "%s · %s" % [CargoType.name_of(o.cargo_type), " · ".join(parts)]
 
-	var card := UI.info_row(cargo_icon if cargo_icon != null else Assets.get_image("ui_order"), title, sub, [])
+	var actions: Array = []
+	if o.status == Order.Status.PENDING:
+		actions.append({
+			"text": Localization.t("order.dispatch") + " ▸",
+			"color": UI.BLUE,
+			"cb": func(): _open_picker(o),
+		})
+	var card := UI.info_row(cargo_icon if cargo_icon != null else Assets.get_image("ui_order"), title, sub, actions)
 	# 紧迫高亮：待分配且剩余时限紧张 → 橙色描边
 	if o.status == Order.Status.PENDING and o.deadline_day - GameManager.day <= 2:
 		card.add_theme_stylebox_override("panel", UI._cartoon_style(Color(1.0, 0.93, 0.82), UI.ORANGE, 10, 8))
 	add_child(card)
+
+
+func _open_picker(o: Order) -> void:
+	if _picker == null:
+		_picker = VehiclePicker.new()
+		add_child(_picker)
+	_picker.pick(o, func(_v: Vehicle, ok: bool):
+		EventBus.orders_changed.emit()
+		EventBus.vehicles_changed.emit())
 
 
 func _find_vehicle(o: Order) -> Vehicle:

@@ -16,10 +16,12 @@ func _ready() -> void:
 	# 0. UI 面板构建验证
 	_build_all_panels()
 
-	# 2. 构造车队/站点/仓库/员工
+	# 2. 构造车队/站点/仓库/员工（注意：手动构造须显式设置能力位，否则 can_carry 全拒）
 	var v := Vehicle.new(GameManager.uid("veh"), "测试面包车", Vehicle.Type.VAN, 500, 70.0, 60000)
+	v.capabilities = Vehicle.Capability.REFRIGERATED | Vehicle.Capability.PHARMA
 	GameManager.vehicles.append(v)
 	var v2 := Vehicle.new(GameManager.uid("veh"), "测试货车", Vehicle.Type.TRUCK, 2000, 65.0, 120000)
+	v2.capabilities = Vehicle.Capability.HAZMAT
 	GameManager.vehicles.append(v2)
 	var h := Hub.new(GameManager.uid("hub"), "测试仓", "seoul", 200, 8000)
 	GameManager.hubs.append(h)
@@ -34,6 +36,25 @@ func _ready() -> void:
 	_ok(GameManager.achievements.has("first_vehicle"), "成就 first_vehicle 解锁（%s）" % str(GameManager.achievements))
 	var ach_count := GameManager.achievements.size()
 	_ok(ach_count >= 1, "成就系统至少解锁 1 项（%d）" % ach_count)
+
+	# 3.5 手动派单（v0.11）：车辆 IDLE 时关闭自动派单 → 新订单保持 PENDING → 手动指派
+	var osys := GameManager.order_sys
+	osys.auto_assign_enabled = false
+	GameManager.advance_day()
+	var pending: Array = []
+	for o in GameManager.orders:
+		if o.status == Order.Status.PENDING:
+			pending.append(o)
+	_ok(not pending.is_empty(), "关闭自动派单后存在 PENDING 订单（%d）" % pending.size())
+	if not pending.is_empty():
+		var target: Order = pending[0]
+		var cands: Array = osys.assignable_vehicles(GameManager, target)
+		_ok(not cands.is_empty(), "assignable_vehicles 返回候选（%d）" % cands.size())
+		if not cands.is_empty():
+			var veh: Vehicle = cands[0]["vehicle"]
+			var ok2 := osys.assign_order(GameManager, veh, target)
+			_ok(ok2 and target.status == Order.Status.INTRANSIT, "手动派单成功 %s -> %s" % [target.id, veh.name])
+	osys.auto_assign_enabled = true
 
 	# 3. 推进 25 天，验证多对手出现 + 事件系统
 	for i in 25:

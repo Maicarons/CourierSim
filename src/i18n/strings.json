@@ -325,7 +325,18 @@
     "order.group.failed": "超时",
     "order.reward": "奖 %d",
     "order.done_day": "第 %d 天送达",
-    "order.timeout_day": "第 %d 天超时"
+    "order.timeout_day": "第 %d 天超时",
+    "picker.hint": "点击车辆立即派单（按距发货城市排序）",
+    "picker.empty": "没有可用的空闲车辆\n请先购买能承运该货种的车辆，或等待在途车辆返回",
+    "picker.assign": "派单",
+    "order.dispatch": "派单",
+    "order.auto_assign": "自动派单",
+    "tip.auto_assign": "自动把待分配订单派给空闲车辆；关闭后手动派单",
+    "toast.auto_assign": "自动派单：%s",
+    "order.auto_on": "开启",
+    "order.auto_off": "关闭",
+    "toast.dispatch_ok": "%s 已接单 %s",
+    "order.id": "订单"
   },
   "en_US": {
     "menu.title": "🚚 CourierSim Courier Kingdom",
@@ -653,6 +664,17 @@
     "order.group.failed": "Failed",
     "order.reward": "Rew %d",
     "order.done_day": "Delivered Day %d",
-    "order.timeout_day": "Timed out Day %d"
+    "order.timeout_day": "Timed out Day %d",
+    "picker.hint": "Click a vehicle to dispatch (sorted by distance)",
+    "picker.empty": "No idle vehicle available\nBuy a capable vehicle or wait for en-route vehicles to return",
+    "picker.assign": "Dispatch",
+    "order.dispatch": "Dispatch",
+    "order.auto_assign": "Auto-assign",
+    "tip.auto_assign": "Automatically assign pending orders to idle vehicles; turn off for manual dispatch",
+    "toast.auto_assign": "Auto-assign: %s",
+    "order.auto_on": "ON",
+    "order.auto_off": "OFF",
+    "toast.dispatch_ok": "%s accepted %s",
+    "order.id": "Order"
   }
 }
