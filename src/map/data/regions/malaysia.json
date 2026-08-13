@@ -9,12 +9,111 @@
   "unlock_cost": 350000,
   "difficulty": 3,
   "cities": [
-    {"id": "kl", "name": "吉隆坡", "name_en": "Kuala Lumpur", "lat": 3.1390, "lon": 101.6869, "tier": 1, "population": 8000000, "coastal": false, "port": false},
-    {"id": "penang", "name": "槟城", "name_en": "Penang", "lat": 5.4164, "lon": 100.3327, "tier": 2, "population": 700000, "coastal": true, "port": true},
-    {"id": "jb", "name": "新山", "name_en": "Johor Bahru", "lat": 1.4927, "lon": 103.7414, "tier": 2, "population": 900000, "coastal": true, "port": true},
-    {"id": "ipoh", "name": "怡保", "name_en": "Ipoh", "lat": 4.5975, "lon": 101.0901, "tier": 3, "population": 700000, "coastal": false, "port": false},
-    {"id": "kotakinabalu", "name": "哥打基纳巴卢", "name_en": "Kota Kinabalu", "lat": 5.9804, "lon": 116.0735, "tier": 3, "population": 500000, "coastal": true, "port": true},
-    {"id": "kuching", "name": "古晋", "name_en": "Kuching", "lat": 1.5535, "lon": 110.3593, "tier": 3, "population": 600000, "coastal": true, "port": true},
-    {"id": "melaka", "name": "马六甲", "name_en": "Melaka", "lat": 2.1896, "lon": 102.2501, "tier": 4, "population": 500000, "coastal": true, "port": false}
-  ]
+    {
+      "id": "kl",
+      "name": "吉隆坡",
+      "name_en": "Kuala Lumpur",
+      "lat": 3.139,
+      "lon": 101.6869,
+      "tier": 1,
+      "population": 8000000,
+      "coastal": false,
+      "port": false
+    },
+    {
+      "id": "penang",
+      "name": "槟城",
+      "name_en": "Penang",
+      "lat": 5.4164,
+      "lon": 100.3327,
+      "tier": 2,
+      "population": 700000,
+      "coastal": true,
+      "port": true
+    },
+    {
+      "id": "jb",
+      "name": "新山",
+      "name_en": "Johor Bahru",
+      "lat": 1.4927,
+      "lon": 103.7414,
+      "tier": 2,
+      "population": 900000,
+      "coastal": true,
+      "port": true
+    },
+    {
+      "id": "ipoh",
+      "name": "怡保",
+      "name_en": "Ipoh",
+      "lat": 4.5975,
+      "lon": 101.0901,
+      "tier": 3,
+      "population": 700000,
+      "coastal": false,
+      "port": false
+    },
+    {
+      "id": "kotakinabalu",
+      "name": "哥打基纳巴卢",
+      "name_en": "Kota Kinabalu",
+      "lat": 5.9804,
+      "lon": 116.0735,
+      "tier": 3,
+      "population": 500000,
+      "coastal": true,
+      "port": true
+    },
+    {
+      "id": "kuching",
+      "name": "古晋",
+      "name_en": "Kuching",
+      "lat": 1.5535,
+      "lon": 110.3593,
+      "tier": 3,
+      "population": 600000,
+      "coastal": true,
+      "port": true
+    },
+    {
+      "id": "melaka",
+      "name": "马六甲",
+      "name_en": "Melaka",
+      "lat": 2.1896,
+      "lon": 102.2501,
+      "tier": 4,
+      "population": 500000,
+      "coastal": true,
+      "port": false
+    }
+  ],
+  "features": {
+    "demand_bonus": 1.05,
+    "events": [
+      {
+        "name": "斋月电商潮",
+        "name_en": "Raya E-commerce Rush",
+        "code": "demand",
+        "mult": 1.6,
+        "desc": "开斋节采购潮，需求 +60%",
+        "desc_en": "Raya shopping rush, demand +60%"
+      },
+      {
+        "name": "巴生港扩建",
+        "name_en": "Port Klang Upgrade",
+        "code": "reward",
+        "mult": 1.4,
+        "desc": "巴生港扩建完成，配送收益 +40%",
+        "desc_en": "Port Klang expanded, delivery reward +40%"
+      },
+      {
+        "name": "清真认证补贴",
+        "name_en": "Halal Subsidy",
+        "code": "fuel",
+        "mult": 0.75,
+        "desc": "绿色物流补贴，油费 -25%",
+        "desc_en": "Green logistics subsidy, fuel -25%"
+      }
+    ]
+  }
 }

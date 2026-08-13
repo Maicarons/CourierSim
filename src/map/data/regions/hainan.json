@@ -9,11 +9,100 @@
   "unlock_cost": 300000,
   "difficulty": 2,
   "cities": [
-    {"id": "haikou", "name": "海口", "name_en": "Haikou", "lat": 20.0444, "lon": 110.1989, "tier": 1, "population": 2870000, "coastal": true, "port": true},
-    {"id": "sanya", "name": "三亚", "name_en": "Sanya", "lat": 18.2528, "lon": 109.5119, "tier": 2, "population": 1030000, "coastal": true, "port": true},
-    {"id": "danzhou", "name": "儋州", "name_en": "Danzhou", "lat": 19.5206, "lon": 109.5800, "tier": 3, "population": 1000000, "coastal": true, "port": false},
-    {"id": "wenchang", "name": "文昌", "name_en": "Wenchang", "lat": 19.5420, "lon": 110.7810, "tier": 4, "population": 560000, "coastal": true, "port": false},
-    {"id": "qionghai", "name": "琼海", "name_en": "Qionghai", "lat": 19.2556, "lon": 110.4636, "tier": 4, "population": 500000, "coastal": false, "port": false},
-    {"id": "wuzhishan", "name": "五指山", "name_en": "Wuzhishan", "lat": 18.7769, "lon": 109.5167, "tier": 4, "population": 110000, "coastal": false, "port": false}
-  ]
+    {
+      "id": "haikou",
+      "name": "海口",
+      "name_en": "Haikou",
+      "lat": 20.0444,
+      "lon": 110.1989,
+      "tier": 1,
+      "population": 2870000,
+      "coastal": true,
+      "port": true
+    },
+    {
+      "id": "sanya",
+      "name": "三亚",
+      "name_en": "Sanya",
+      "lat": 18.2528,
+      "lon": 109.5119,
+      "tier": 2,
+      "population": 1030000,
+      "coastal": true,
+      "port": true
+    },
+    {
+      "id": "danzhou",
+      "name": "儋州",
+      "name_en": "Danzhou",
+      "lat": 19.5206,
+      "lon": 109.58,
+      "tier": 3,
+      "population": 1000000,
+      "coastal": true,
+      "port": false
+    },
+    {
+      "id": "wenchang",
+      "name": "文昌",
+      "name_en": "Wenchang",
+      "lat": 19.542,
+      "lon": 110.781,
+      "tier": 4,
+      "population": 560000,
+      "coastal": true,
+      "port": false
+    },
+    {
+      "id": "qionghai",
+      "name": "琼海",
+      "name_en": "Qionghai",
+      "lat": 19.2556,
+      "lon": 110.4636,
+      "tier": 4,
+      "population": 500000,
+      "coastal": false,
+      "port": false
+    },
+    {
+      "id": "wuzhishan",
+      "name": "五指山",
+      "name_en": "Wuzhishan",
+      "lat": 18.7769,
+      "lon": 109.5167,
+      "tier": 4,
+      "population": 110000,
+      "coastal": false,
+      "port": false
+    }
+  ],
+  "features": {
+    "demand_bonus": 1.0,
+    "events": [
+      {
+        "name": "旅游旺季",
+        "name_en": "Tourist Season",
+        "code": "demand",
+        "mult": 1.6,
+        "desc": "海岛旅游旺季，订单需求 +60%",
+        "desc_en": "Island tourism peak, demand +60%"
+      },
+      {
+        "name": "免税购物节",
+        "name_en": "Duty-Free Festival",
+        "code": "demand",
+        "mult": 1.7,
+        "desc": "离岛免税促销，需求 +70%",
+        "desc_en": "Off-island duty-free sale, demand +70%"
+      },
+      {
+        "name": "台风季",
+        "name_en": "Typhoon Season",
+        "code": "speed",
+        "mult": 0.6,
+        "desc": "台风过境，车辆速度 -40%",
+        "desc_en": "Typhoon passes, vehicle speed -40%"
+      }
+    ]
+  }
 }

@@ -19,7 +19,18 @@ const EVENTS := [
 func process_day(game: GameManager) -> void:
 	if game.rng.randf() > 0.35:
 		return
-	var ev: Dictionary = EVENTS[game.rng.randi() % EVENTS.size()]
+	# 沙盒模式可关闭随机事件
+	if not bool(game.sandbox_cfg.get("events", true)):
+		return
+	# 区域特色事件优先：40% 概率从当前区域事件池抽取（若有）
+	var ev: Dictionary = {}
+	var local_events: Array = []
+	if RegionManager.current != null:
+		local_events = RegionManager.current.features.get("events", [])
+	if not local_events.is_empty() and game.rng.randf() < 0.4:
+		ev = local_events[game.rng.randi() % local_events.size()]
+	else:
+		ev = EVENTS[game.rng.randi() % EVENTS.size()]
 	match ev["code"]:
 		"fuel": game.modifiers["fuel_price_mult"] *= float(ev["mult"])
 		"speed": game.modifiers["speed_mult"] *= float(ev["mult"])

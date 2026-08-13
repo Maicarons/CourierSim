@@ -46,6 +46,28 @@ Godot 4 的 2D 像素卡通任天堂风快递公司模拟经营游戏。规划�
 - **导出** `export_presets.cfg`（Windows/Linux x86_64）；`.gitignore` 含 `build/`。
 - **新 class_name 注册**：新增 .gd 的 class_name 首次引用报 "Could not find type" → 先跑 `godot --headless --import` 重建类名缓存。
 
+## 数值平衡（v0.7）与 headless 模拟铁律
+
+- **headless 模拟车辆不动**：车辆移动由 TimeSystem 真实时间驱动（`SECONDS_PER_DAY=2.5`），手动 `advance_day()` 不推车队。模拟长局必须 `TimeSystem.set_speed(0)` + 每回合 `GameManager.tick_frame(1.0)` 显式推进。
+- **市占模型**：对手份额若只增不减 → 玩家市占锁死 ~10%（评级/成就永不可达）。修法：玩家累计交付按比例蚕食对手（`delivered×0.0003` clamp 0.02）。
+- **经济健康基准**（`tools/balance_sim.tscn` 120 天 AI 基准）：Day106 A 级通关、不破产、声誉 70+、市占 27→94% 弧线。
+- **平衡调优记录**：compute_spawn 站点基数 0.8；deadline buffer 4/6；奖励 km×(2.2+0.12w)；超时 -1.5 / 交付 +1.5 声誉；VAN 620km/日；胜利 Day≥30。
+- **数值平衡必须用长局模拟验证**，纯读码看不出涌现问题（AI 破产/市占天花板/声誉崩塌）。
+
+## 工程化（v0.7）
+
+- Git 仓库已初始化（`G:\GitHub\CourierSim`），首次提交 212 文件；`nul`（Windows 保留名）阻塞 git add 已删除。
+- CI：`.github/workflows/test.yml` — Godot 4.6.3 Linux headless 启动 + smoke_test + balance_sim + VitePress build。
+- README 反映真实结构（src/assets/comfyui/tools/docs）。
+
+## 内容填充（v0.8）
+
+- **能力矩阵**：`vehicles.json` cap 位 — 面包车 0 / 货车 4 / 冷藏车 3 / 无人机 0 / 飞机 15 / 货轮 15（CargoType.capability: STANDARD=0, COLDCHAIN=1, PHARMA=2, HAZMAT=4, INT=8）。
+- **降级保护**：`spawn_one` 无对应能力车辆时特殊货降级为标准货（`_has_carrier` 检查）。
+- **区域特色**：`region.json` 加 `features{demand_bonus, events[]}`；`EventSystem` 40% 抽区域事件池；`compute_spawn` 乘 demand_bonus。
+- **沙盒参数**：`GameManager.sandbox_cfg{funds_mult, events, competition}`；MainMenu 沙盒模式显示参数区；竞争 0 时无初始对手。
+- **胜利条件**：仅 rating()=="S" 且 Day≥40 通关（A 不结束）。
+
 ## 工具脚本
 
 - `tools/bake_land.py` — 从 Natural Earth 50m land 烘焙区域陆地多边形 JSON

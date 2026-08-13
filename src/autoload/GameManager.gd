@@ -85,6 +85,8 @@ var ach_sys: AchievementSystem
 var rng := RandomNumberGenerator.new()
 var ledger: Array = []   # {day, amount, category, label}
 var achievements: Array[String] = []   # 已解锁成就 id
+## 沙盒自由参数：{funds_mult: float, events: bool, competition: float}（仅沙盒模式生效）
+var sandbox_cfg := {"funds_mult": 1.0, "events": true, "competition": 1.0}
 
 func _ready() -> void:
 	rng.randomize()
@@ -114,7 +116,7 @@ func new_game(p_mode: String, p_company: String, region_id: String) -> void:
 	RegionManager.set_current(region_id)
 	day = 1
 	reputation = 50.0
-	money = CAREER_MONEY if mode == "career" else SANDBOX_MONEY
+	money = CAREER_MONEY if mode == "career" else int(SANDBOX_MONEY * float(sandbox_cfg.get("funds_mult", 1.0)))
 	id_counter = 0
 	tutorial_step = 0
 	game_over_emitted = false
@@ -204,8 +206,9 @@ func _check_game_over() -> void:
 		game_over_emitted = true
 		EventBus.game_over.emit("game.over.bankrupt")
 		return
-	# 生涯模式：达成 S/A 评级（且至少运营 30 天）视为通关胜利
-	if mode == "career" and day >= 30 and (rating() == "S" or rating() == "A"):
+	# 生涯模式：达成 S 评级（且至少运营 40 天）视为通关胜利；
+	# A 级不结束，给玩家继续冲击 S 的空间
+	if mode == "career" and day >= 40 and rating() == "S":
 		game_over_emitted = true
 		EventBus.game_over.emit("game.over.victory")
 

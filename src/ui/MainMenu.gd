@@ -14,6 +14,10 @@ var _company_edit: LineEdit
 var _region_opt: OptionButton
 var _mode := "career"
 var _mode_buttons: Array[Button] = []
+var _sandbox_box: VBoxContainer
+var _sandbox_funds: OptionButton
+var _sandbox_comp: OptionButton
+var _sandbox_events: CheckBox
 var _new_game_btn: Button
 var _continue_btn: Button
 var _floating: Array[Dictionary] = []   # {tex, x, y, vx, vy, rot, rot_v}
@@ -244,6 +248,38 @@ func _build_config_panel() -> PanelContainer:
 	mrow.add_child(b_career)
 	mrow.add_child(b_sandbox)
 
+	# 沙盒自由参数（仅沙盒模式显示）
+	_sandbox_box = VBoxContainer.new()
+	_sandbox_box.add_theme_constant_override("separation", 6)
+	vbox.add_child(_sandbox_box)
+	UI.header(_sandbox_box, Localization.t("menu.sandbox_opts"))
+	var opts := HBoxContainer.new()
+	opts.add_theme_constant_override("separation", 10)
+	_sandbox_box.add_child(opts)
+	opts.add_child(UI.label(Localization.t("menu.funds"), 100))
+	_sandbox_funds = OptionButton.new()
+	_sandbox_funds.add_item("1x", 0)
+	_sandbox_funds.add_item("3x", 1)
+	_sandbox_funds.add_item("10x", 2)
+	_sandbox_funds.select(0)
+	opts.add_child(_sandbox_funds)
+	opts.add_child(UI.spacer())
+	opts.add_child(UI.label(Localization.t("menu.competition"), 100))
+	_sandbox_comp = OptionButton.new()
+	_sandbox_comp.add_item(Localization.t("menu.comp_off"), 0)
+	_sandbox_comp.add_item(Localization.t("menu.comp_normal"), 1)
+	_sandbox_comp.add_item(Localization.t("menu.comp_hard"), 2)
+	_sandbox_comp.select(1)
+	opts.add_child(_sandbox_comp)
+	var ev_row := HBoxContainer.new()
+	ev_row.add_theme_constant_override("separation", 10)
+	_sandbox_box.add_child(ev_row)
+	ev_row.add_child(UI.label(Localization.t("menu.events"), 100))
+	_sandbox_events = CheckBox.new()
+	_sandbox_events.button_pressed = true
+	_sandbox_events.add_theme_color_override("font_color", UI.INK)
+	ev_row.add_child(_sandbox_events)
+
 	# 区域
 	UI.header(vbox, Localization.t("menu.region"))
 	_region_opt = OptionButton.new()
@@ -441,6 +477,8 @@ func _set_mode(m: String) -> void:
 	_mode = m
 	for b in _mode_buttons:
 		b.button_pressed = (b.get_meta("mode") == m)
+	if _sandbox_box != null:
+		_sandbox_box.visible = (m == "sandbox")
 
 
 func _on_continue() -> void:
@@ -466,6 +504,11 @@ func _on_start() -> void:
 	var name := _company_edit.text.strip_edges()
 	if name == "":
 		name = Localization.t("menu.default_company")
+	# 沙盒自由参数
+	if _mode == "sandbox" and _sandbox_funds != null:
+		GameManager.sandbox_cfg["funds_mult"] = [1.0, 3.0, 10.0][_sandbox_funds.selected]
+		GameManager.sandbox_cfg["competition"] = [0.0, 1.0, 2.0][_sandbox_comp.selected]
+		GameManager.sandbox_cfg["events"] = _sandbox_events.button_pressed
 	GameManager.new_game(_mode, name, region_id)
 	# 新游戏写入空闲槽位（不覆盖已有存档），并绑定为活跃槽位
 	var slot := SaveManager.next_free_slot()

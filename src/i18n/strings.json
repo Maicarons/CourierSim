@@ -291,7 +291,14 @@
     "set.tab.achievements": "成就",
     "set.achievements.title": "成就",
     "set.saves.delete_confirm_title": "删除存档？",
-    "set.saves.delete_confirm_msg": "存档「%s」将被永久删除，且无法恢复。"
+    "set.saves.delete_confirm_msg": "存档「%s」将被永久删除，且无法恢复。",
+    "menu.sandbox_opts": "沙盒参数",
+    "menu.funds": "起点资金",
+    "menu.competition": "竞争强度",
+    "menu.comp_off": "无竞争",
+    "menu.comp_normal": "标准",
+    "menu.comp_hard": "高强度",
+    "menu.events": "随机事件"
   },
   "en_US": {
     "menu.title": "🚚 CourierSim Courier Kingdom",
@@ -585,6 +592,13 @@
     "set.tab.achievements": "Achievements",
     "set.achievements.title": "Achievements",
     "set.saves.delete_confirm_title": "Delete save?",
-    "set.saves.delete_confirm_msg": "Save \"%s\" will be permanently deleted and cannot be restored."
+    "set.saves.delete_confirm_msg": "Save \"%s\" will be permanently deleted and cannot be restored.",
+    "menu.sandbox_opts": "Sandbox Options",
+    "menu.funds": "Starting Funds",
+    "menu.competition": "Competition",
+    "menu.comp_off": "None",
+    "menu.comp_normal": "Standard",
+    "menu.comp_hard": "High",
+    "menu.events": "Random Events"
   }
 }

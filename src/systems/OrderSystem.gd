@@ -23,7 +23,11 @@ func compute_spawn(game: GameManager) -> int:
 	var base: int = max(1, int(float(game.stations.size()) * 0.8))
 	var demand: float = game.modifiers["demand_mult"]
 	var diff: int = RegionManager.current.difficulty
-	var mult: float = (0.6 + demand * 0.5) / float(diff)
+	# 区域特色：需求加成（如越南/马来西亚增速市场）
+	var region_bonus: float = 1.0
+	if RegionManager.current != null:
+		region_bonus = float(RegionManager.current.features.get("demand_bonus", 1.0))
+	var mult: float = (0.6 + demand * 0.5) / float(diff) * region_bonus
 	var n := int(round(base * mult * (0.6 + game.rng.randf() * 0.6)))
 	return max(1, n)
 
@@ -68,6 +72,9 @@ func spawn_one(game: GameManager) -> void:
 		cargo = CargoType.Type.HAZMAT
 	elif roll > 0.68:
 		cargo = CargoType.Type.INTERNATIONAL
+	# 降级保护：若当前车队没有能运该货种的车辆，降为标准货（避免无人接单卡死）
+	if cargo != CargoType.Type.STANDARD and not _has_carrier(game, cargo):
+		cargo = CargoType.Type.STANDARD
 	var weight := 2.0 + game.rng.randf() * 28.0
 	if cargo == CargoType.Type.HAZMAT:
 		weight = 50.0 + game.rng.randf() * 200.0
@@ -89,6 +96,13 @@ func reward_for(game: GameManager, distance_m: float, cargo: int, weight: float)
 	var base := km * (2.2 + weight * 0.12)
 	var r: int = int(base * CargoType.reward_mult(cargo) * game.modifiers.get("reward_mult", 1.0))
 	return max(50, r)
+
+## 车队中是否存在能运该货种的车辆
+func _has_carrier(game: GameManager, cargo: int) -> bool:
+	for v in game.vehicles:
+		if v.can_carry(cargo):
+			return true
+	return false
 
 ## 自动分配：把待分配订单派给合适的空闲车辆
 func auto_assign(game: GameManager) -> void:

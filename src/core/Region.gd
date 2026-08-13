@@ -14,6 +14,7 @@ var unlock_cost: int = 0      # 解锁所需资金（0 = 首发免费）
 var difficulty: int = 1       # 1~5，影响竞争强度与成本
 var unlocked: bool = false
 var cities: Array[City] = []
+var features: Dictionary = {} # 区域特色：{demand_bonus: float, events: Array}
 
 # ---- 运行时缓存 ----
 var _local_cache: Dictionary = {}  # city_id -> Vector2 (米, 东向x/北向y)
@@ -41,6 +42,7 @@ static func from_dict(d: Dictionary) -> Region:
 	r.unlock_cost = int(d.get("unlock_cost", 0))
 	r.difficulty = int(d.get("difficulty", 1))
 	r.unlocked = r.unlock_cost == 0
+	r.features = d.get("features", {})
 	var arr: Array = d.get("cities", [])
 	for cd in arr:
 		r.cities.append(City.from_dict(cd))

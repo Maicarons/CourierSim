@@ -25,18 +25,20 @@ const PROMO_CHANCE := 0.12   # 每日对手促销概率
 
 
 func process_day(game: GameManager) -> void:
-	# 开局即有一家初始对手（避免玩家份额为 100% 的失真）
-	if competitors.is_empty():
+	# 沙盒竞争强度系数（0 = 无竞争，2 = 高强度）
+	var comp_mult := float(game.sandbox_cfg.get("competition", 1.0)) if game.mode == "sandbox" else 1.0
+	# 开局即有一家初始对手（避免玩家份额为 100% 的失真）；无竞争模式跳过
+	if competitors.is_empty() and comp_mult > 0.0:
 		_add_initial(game)
 	# 按天数扩充对手池
-	if game.day % SPAWN_DAY == 0 and competitors.size() < MAX_COMPETITORS \
+	if comp_mult > 0.0 and game.day % SPAWN_DAY == 0 and competitors.size() < MAX_COMPETITORS \
 			and competitors.size() < POOL.size() - 1:
 		_add_competitor(game)
 	# 对手每日扩张（玩家交付越多压制越强：每 50 单交付压制减半增速）
 	var delivered := game.delivered_count()
 	var pressure := 1.0 + float(delivered) * 0.02
 	for c in competitors:
-		c["share"] = GeoMath.clampf(c["share"] * (1.0 + 0.012 / pressure), 0.0, 0.6)
+		c["share"] = GeoMath.clampf(c["share"] * (1.0 + 0.012 * comp_mult / pressure), 0.0, 0.6)
 	# 玩家交付主动蚕食对手份额：累计交付越多，市占越高（每 10 单约抢 1%）
 	var total := 0.0
 	for c in competitors:
