@@ -1,0 +1,49 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  godot:
+    name: Godot headless smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Godot 4.6.3
+        run: |
+          curl -sL -o godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_linux.x86_64.zip
+          unzip -o godot.zip -d godot
+          ./godot/Godot_v4.6.3-stable_linux.x86_64 --version
+
+      - name: Headless boot check
+        run: |
+          ./godot/Godot_v4.6.3-stable_linux.x86_64 --headless --path . --quit
+
+      - name: Regression smoke test
+        run: |
+          ./godot/Godot_v4.6.3-stable_linux.x86_64 --headless --path . \
+            res://tools/smoke_test.tscn --quit-after 300
+
+      - name: Balance simulation (120 days)
+        run: |
+          ./godot/Godot_v4.6.3-stable_linux.x86_64 --headless --path . \
+            res://tools/balance_sim.tscn --quit-after 400
+
+  docs:
+    name: VitePress docs build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+      - name: Build docs
+        working-directory: docs
+        run: |
+          npm install
+          npm run build

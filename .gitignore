@@ -1,0 +1,23 @@
+# Godot
+.godot/
+*.uid
+*.import
+export/
+build/
+game/.godot/
+
+# Node / VitePress
+node_modules/
+docs/node_modules/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+
+# 地理数据（体积大，不入库，脚本重建）
+tools/osrm-data/
+*.osm.pbf
+*.osrm
+
+# 系统
+.DS_Store
+Thumbs.db
+*.log

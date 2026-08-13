@@ -1,0 +1,122 @@
+[
+  {
+    "id": "t_fleet",
+    "name": "车队调度优化",
+    "name_en": "Fleet Routing Optimization",
+    "category": 0,
+    "cost": 30000,
+    "description": "智能路径规划，车辆平均速度 +10%",
+    "desc_en": "Smart routing, vehicle avg speed +10%",
+    "prerequisite": [],
+    "effect_code": "speed",
+    "effect_value": 0.10
+  },
+  {
+    "id": "t_eco",
+    "name": "节油驾驶培训",
+    "name_en": "Eco-Driving Training",
+    "category": 0,
+    "cost": 25000,
+    "description": "规范驾驶习惯，油费 -15%",
+    "desc_en": "Smoother driving, fuel cost -15%",
+    "prerequisite": [],
+    "effect_code": "fuel",
+    "effect_value": 0.15
+  },
+  {
+    "id": "t_cold",
+    "name": "冷链技术升级",
+    "name_en": "Cold Chain Upgrade",
+    "category": 0,
+    "cost": 60000,
+    "description": "提升温控能力，冷链/医药收益 +10%",
+    "desc_en": "Better temperature control, cold-chain/pharma reward +10%",
+    "prerequisite": ["t_fleet"],
+    "effect_code": "reward",
+    "effect_value": 0.10
+  },
+  {
+    "id": "t_hub_auto",
+    "name": "自动化分拣",
+    "name_en": "Automated Sorting",
+    "category": 1,
+    "cost": 40000,
+    "description": "引入分拣线，仓库吞吐 +30%",
+    "desc_en": "Sorting lines, hub throughput +30%",
+    "prerequisite": [],
+    "effect_code": "hubcap",
+    "effect_value": 0.30
+  },
+  {
+    "id": "t_hub_net",
+    "name": "枢纽网络",
+    "name_en": "Hub Network",
+    "category": 1,
+    "cost": 90000,
+    "description": "多枢纽协同，仓库吞吐再 +40%",
+    "desc_en": "Multi-hub synergy, hub throughput +40%",
+    "prerequisite": ["t_hub_auto"],
+    "effect_code": "hubcap",
+    "effect_value": 0.40
+  },
+  {
+    "id": "t_ads",
+    "name": "精准广告投放",
+    "name_en": "Targeted Ads",
+    "category": 2,
+    "cost": 35000,
+    "description": "大数据选客，订单需求 +20%",
+    "desc_en": "Data-driven targeting, order demand +20%",
+    "prerequisite": [],
+    "effect_code": "demand",
+    "effect_value": 0.20
+  },
+  {
+    "id": "t_brand",
+    "name": "品牌建设工程",
+    "name_en": "Brand Building",
+    "category": 2,
+    "cost": 80000,
+    "description": "提升溢价能力，配送收益 +15%",
+    "desc_en": "Pricing power, delivery reward +15%",
+    "prerequisite": ["t_ads"],
+    "effect_code": "reward",
+    "effect_value": 0.15
+  },
+  {
+    "id": "t_crm",
+    "name": "客户关系管理",
+    "name_en": "CRM",
+    "category": 2,
+    "cost": 30000,
+    "description": "会员体系，客户满意度 +15%",
+    "desc_en": "Loyalty program, satisfaction +15%",
+    "prerequisite": [],
+    "effect_code": "satisfaction",
+    "effect_value": 0.15
+  },
+  {
+    "id": "t_hr",
+    "name": "员工培训体系",
+    "name_en": "Staff Training",
+    "category": 3,
+    "cost": 40000,
+    "description": "系统化培训，司机效率 +5%",
+    "desc_en": "Systematic training, driver efficiency +5%",
+    "prerequisite": [],
+    "effect_code": "speed",
+    "effect_value": 0.05
+  },
+  {
+    "id": "t_safety",
+    "name": "安全管理体系",
+    "name_en": "Safety Management",
+    "category": 3,
+    "cost": 50000,
+    "description": "降低事故率，事故风险 -30%",
+    "desc_en": "Lower accident rate, accident risk -30%",
+    "prerequisite": ["t_hr"],
+    "effect_code": "accident",
+    "effect_value": 0.30
+  }
+]

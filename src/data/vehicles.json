@@ -1,0 +1,68 @@
+[
+  {
+    "type": 0,
+    "label": "电动面包车",
+    "capacity_kg": 500,
+    "speed_kmh": 70,
+    "km_per_day": 620,
+    "cost": 60000,
+    "fuel_per_km": 0.6,
+    "maintenance_per_day": 80,
+    "cap": 0
+  },
+  {
+    "type": 1,
+    "label": "厢式货车",
+    "capacity_kg": 3000,
+    "speed_kmh": 85,
+    "km_per_day": 600,
+    "cost": 180000,
+    "fuel_per_km": 1.6,
+    "maintenance_per_day": 200,
+    "cap": 0
+  },
+  {
+    "type": 2,
+    "label": "冷藏车",
+    "capacity_kg": 2000,
+    "speed_kmh": 75,
+    "km_per_day": 520,
+    "cost": 260000,
+    "fuel_per_km": 2.0,
+    "maintenance_per_day": 280,
+    "cap": 1
+  },
+  {
+    "type": 3,
+    "label": "配送无人机",
+    "capacity_kg": 30,
+    "speed_kmh": 60,
+    "km_per_day": 400,
+    "cost": 90000,
+    "fuel_per_km": 0.2,
+    "maintenance_per_day": 60,
+    "cap": 0
+  },
+  {
+    "type": 4,
+    "label": "货运飞机",
+    "capacity_kg": 15000,
+    "speed_kmh": 700,
+    "km_per_day": 5000,
+    "cost": 2500000,
+    "fuel_per_km": 12.0,
+    "maintenance_per_day": 3000,
+    "cap": 8
+  },
+  {
+    "type": 5,
+    "label": "货轮",
+    "capacity_kg": 80000,
+    "speed_kmh": 35,
+    "km_per_day": 300,
+    "cost": 4000000,
+    "fuel_per_km": 6.0,
+    "maintenance_per_day": 4000,
+    "cap": 8
+  }
+]

@@ -1,0 +1,21 @@
+{
+  "id": "vietnam",
+  "name": "越南",
+  "name_en": "Vietnam",
+  "country": "VN",
+  "origin_lat": 16.0,
+  "origin_lon": 108.0,
+  "color": "#52b788",
+  "unlock_cost": 250000,
+  "difficulty": 2,
+  "cities": [
+    {"id": "hanoi", "name": "河内", "name_en": "Hanoi", "lat": 21.0278, "lon": 105.8342, "tier": 1, "population": 8000000, "coastal": false, "port": false},
+    {"id": "hcmc", "name": "胡志明市", "name_en": "Ho Chi Minh City", "lat": 10.8231, "lon": 106.6297, "tier": 1, "population": 9000000, "coastal": false, "port": true},
+    {"id": "danang", "name": "岘港", "name_en": "Da Nang", "lat": 16.0544, "lon": 108.2022, "tier": 2, "population": 1000000, "coastal": true, "port": true},
+    {"id": "haiphong", "name": "海防", "name_en": "Haiphong", "lat": 20.8449, "lon": 106.6881, "tier": 2, "population": 2000000, "coastal": true, "port": true},
+    {"id": "cantho", "name": "芹苴", "name_en": "Can Tho", "lat": 10.0452, "lon": 105.7469, "tier": 3, "population": 1200000, "coastal": false, "port": false},
+    {"id": "hue", "name": "顺化", "name_en": "Hue", "lat": 16.4637, "lon": 107.5909, "tier": 3, "population": 350000, "coastal": false, "port": false},
+    {"id": "nhathrang", "name": "芽庄", "name_en": "Nha Trang", "lat": 12.2388, "lon": 109.1967, "tier": 3, "population": 400000, "coastal": true, "port": false},
+    {"id": "biendoa", "name": "边和", "name_en": "Bien Hoa", "lat": 10.9447, "lon": 106.8249, "tier": 3, "population": 1000000, "coastal": false, "port": false}
+  ]
+}

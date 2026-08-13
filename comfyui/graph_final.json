@@ -1,0 +1,20 @@
+{
+  "1": {"class_type": "UNETLoader", "inputs": {"unet_name": "ernie-image-turbo.safetensors", "weight_dtype": "default"}},
+  "2": {"class_type": "CLIPLoader", "inputs": {"clip_name": "ministral-3-3b.safetensors", "type": "flux2", "device": "default"}},
+  "3": {"class_type": "VAELoader", "inputs": {"vae_name": "flux2-vae.safetensors"}},
+  "4": {"class_type": "EmptyFlux2LatentImage", "inputs": {"width": 1024, "height": 1024, "batch_size": 1}},
+  "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": "a cute red mushroom character, 2D pixel art, Nintendo 8-bit game asset, bold black outline, flat colors, minimal shading, simple, isolated on white background"}},
+  "6": {"class_type": "ConditioningZeroOut", "inputs": {"conditioning": ["5", 0]}},
+  "7": {"class_type": "KSampler", "inputs": {"model": ["1", 0], "positive": ["5", 0], "negative": ["6", 0], "latent_image": ["4", 0], "seed": 123456, "steps": 8, "cfg": 1.0, "sampler_name": "euler", "scheduler": "simple", "denoise": 1.0}},
+  "8": {"class_type": "VAEDecode", "inputs": {"samples": ["7", 0], "vae": ["3", 0]}},
+  "9": {"class_type": "SaveImage", "inputs": {"images": ["8", 0], "filename_prefix": "final_raw_preview"}},
+  "10": {"class_type": "PerfectPixel", "inputs": {"image": ["8", 0], "sampling": "Center Sample", "export_scale": 1, "backend": "Auto"}},
+  "12": {"class_type": "ImageResizeKJv2", "inputs": {"image": ["10", 0], "width": 512, "height": 512, "upscale_method": "nearest-exact", "keep_proportion": "pad", "pad_color": "0,0,0", "crop_position": "center", "divisible_by": 1}},
+  "14": {"class_type": "LoadBackgroundRemovalModel", "inputs": {"bg_removal_name": "birefnet.safetensors"}},
+  "15": {"class_type": "RemoveBackground", "inputs": {"bg_removal_model": ["14", 0], "image": ["12", 0]}},
+  "19": {"class_type": "InvertMask", "inputs": {"mask": ["15", 0]}},
+  "26": {"class_type": "GrowMask", "inputs": {"mask": ["19", 0], "expand": -1, "tapered_corners": true}},
+  "17": {"class_type": "ImageQuantize", "inputs": {"image": ["12", 0], "colors": 16, "dither": "none"}},
+  "18": {"class_type": "SaveImageWithAlpha", "inputs": {"images": ["17", 0], "mask": ["26", 0], "filename_prefix": "nintendo_pixel_asset"}},
+  "20": {"class_type": "SaveImage", "inputs": {"images": ["17", 0], "filename_prefix": "nintendo_pixel_preview"}}
+}

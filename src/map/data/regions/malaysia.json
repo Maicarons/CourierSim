@@ -1,0 +1,20 @@
+{
+  "id": "malaysia",
+  "name": "马来西亚",
+  "name_en": "Malaysia",
+  "country": "MY",
+  "origin_lat": 3.5,
+  "origin_lon": 102.0,
+  "color": "#f4a261",
+  "unlock_cost": 350000,
+  "difficulty": 3,
+  "cities": [
+    {"id": "kl", "name": "吉隆坡", "name_en": "Kuala Lumpur", "lat": 3.1390, "lon": 101.6869, "tier": 1, "population": 8000000, "coastal": false, "port": false},
+    {"id": "penang", "name": "槟城", "name_en": "Penang", "lat": 5.4164, "lon": 100.3327, "tier": 2, "population": 700000, "coastal": true, "port": true},
+    {"id": "jb", "name": "新山", "name_en": "Johor Bahru", "lat": 1.4927, "lon": 103.7414, "tier": 2, "population": 900000, "coastal": true, "port": true},
+    {"id": "ipoh", "name": "怡保", "name_en": "Ipoh", "lat": 4.5975, "lon": 101.0901, "tier": 3, "population": 700000, "coastal": false, "port": false},
+    {"id": "kotakinabalu", "name": "哥打基纳巴卢", "name_en": "Kota Kinabalu", "lat": 5.9804, "lon": 116.0735, "tier": 3, "population": 500000, "coastal": true, "port": true},
+    {"id": "kuching", "name": "古晋", "name_en": "Kuching", "lat": 1.5535, "lon": 110.3593, "tier": 3, "population": 600000, "coastal": true, "port": true},
+    {"id": "melaka", "name": "马六甲", "name_en": "Melaka", "lat": 2.1896, "lon": 102.2501, "tier": 4, "population": 500000, "coastal": true, "port": false}
+  ]
+}

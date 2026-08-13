@@ -1,0 +1,29 @@
+{
+  "id": "korea",
+  "name": "韩国",
+  "name_en": "South Korea",
+  "country": "KR",
+  "origin_lat": 36.5,
+  "origin_lon": 127.8,
+  "color": "#4a90d9",
+  "unlock_cost": 0,
+  "difficulty": 1,
+  "cities": [
+    {"id": "seoul", "name": "首尔", "name_en": "Seoul", "lat": 37.5665, "lon": 126.9780, "tier": 1, "population": 9700000, "coastal": false, "port": false},
+    {"id": "busan", "name": "釜山", "name_en": "Busan", "lat": 35.1796, "lon": 129.0756, "tier": 1, "population": 3400000, "coastal": true, "port": true},
+    {"id": "incheon", "name": "仁川", "name_en": "Incheon", "lat": 37.4563, "lon": 126.7052, "tier": 2, "population": 3000000, "coastal": true, "port": true},
+    {"id": "daegu", "name": "大邱", "name_en": "Daegu", "lat": 35.8722, "lon": 128.6014, "tier": 2, "population": 2400000, "coastal": false, "port": false},
+    {"id": "daejeon", "name": "大田", "name_en": "Daejeon", "lat": 36.3504, "lon": 127.3845, "tier": 2, "population": 1500000, "coastal": false, "port": false},
+    {"id": "gwangju", "name": "光州", "name_en": "Gwangju", "lat": 35.1595, "lon": 126.8526, "tier": 2, "population": 1500000, "coastal": false, "port": false},
+    {"id": "ulsan", "name": "蔚山", "name_en": "Ulsan", "lat": 35.5384, "lon": 129.3114, "tier": 2, "population": 1100000, "coastal": true, "port": true},
+    {"id": "suwon", "name": "水原", "name_en": "Suwon", "lat": 37.2636, "lon": 127.0286, "tier": 3, "population": 1200000, "coastal": false, "port": false},
+    {"id": "seongnam", "name": "城南", "name_en": "Seongnam", "lat": 37.4138, "lon": 127.1620, "tier": 3, "population": 950000, "coastal": false, "port": false},
+    {"id": "cheongju", "name": "清州", "name_en": "Cheongju", "lat": 36.6424, "lon": 127.4890, "tier": 3, "population": 850000, "coastal": false, "port": false},
+    {"id": "changwon", "name": "昌原", "name_en": "Changwon", "lat": 35.2270, "lon": 128.6810, "tier": 3, "population": 1000000, "coastal": true, "port": false},
+    {"id": "jeonju", "name": "全州", "name_en": "Jeonju", "lat": 35.8242, "lon": 127.1480, "tier": 3, "population": 650000, "coastal": false, "port": false},
+    {"id": "jeju", "name": "济州", "name_en": "Jeju", "lat": 33.4996, "lon": 126.5312, "tier": 3, "population": 670000, "coastal": true, "port": true},
+    {"id": "pohang", "name": "浦项", "name_en": "Pohang", "lat": 36.0190, "lon": 129.3435, "tier": 3, "population": 500000, "coastal": true, "port": true},
+    {"id": "chuncheon", "name": "春川", "name_en": "Chuncheon", "lat": 37.8813, "lon": 127.7298, "tier": 4, "population": 280000, "coastal": false, "port": false},
+    {"id": "gangneung", "name": "江陵", "name_en": "Gangneung", "lat": 37.7519, "lon": 128.8761, "tier": 4, "population": 210000, "coastal": true, "port": false}
+  ]
+}
