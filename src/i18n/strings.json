@@ -318,7 +318,14 @@
     "ov.ach_hint": "更多成就见「设置 → 成就」",
     "toast.ach_banner": "🏅 成就解锁！",
     "mode_name.career": "生涯模式",
-    "mode_name.sandbox": "沙盒模式"
+    "mode_name.sandbox": "沙盒模式",
+    "order.group.pending": "待分配",
+    "order.group.intransit": "在途",
+    "order.group.delivered": "已送达",
+    "order.group.failed": "超时",
+    "order.reward": "奖 %d",
+    "order.done_day": "第 %d 天送达",
+    "order.timeout_day": "第 %d 天超时"
   },
   "en_US": {
     "menu.title": "🚚 CourierSim Courier Kingdom",
@@ -639,6 +646,13 @@
     "ov.ach_hint": "More in Settings -> Achievements",
     "toast.ach_banner": "🏅 Achievement unlocked!",
     "mode_name.career": "Career Mode",
-    "mode_name.sandbox": "Sandbox Mode"
+    "mode_name.sandbox": "Sandbox Mode",
+    "order.group.pending": "Pending",
+    "order.group.intransit": "In Transit",
+    "order.group.delivered": "Delivered",
+    "order.group.failed": "Failed",
+    "order.reward": "Rew %d",
+    "order.done_day": "Delivered Day %d",
+    "order.timeout_day": "Timed out Day %d"
   }
 }

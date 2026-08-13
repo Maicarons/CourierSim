@@ -6,10 +6,17 @@ extends Node
 
 const DAYS := 120
 
+## 车队策略：van / truck / mix（命令行 --strategy=xxx）
+var _strategy := "van"
+
+
 func _ready() -> void:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--strategy="):
+			_strategy = a.trim_prefix("--strategy=")
 	GameManager.new_game("career", "平衡测试", "korea")
 	TimeSystem.set_speed(0)   # 暂停真实时间驱动，改由模拟显式推进车队
-	print("[BAL] 起始资金 %d" % GameManager.money)
+	print("[BAL] 起始资金 %d · 策略 %s" % [GameManager.money, _strategy])
 	var bankrupt := false
 	var milestone_day := 0
 	for day in DAYS:
@@ -35,11 +42,16 @@ func _ready() -> void:
 
 func _ai_turn() -> void:
 	var g := GameManager
-	# 优先扩运力：每 2 天买 1 辆面包车（直到 8 辆）
+	# 按策略购车（优先扩运力）
 	if g.day % 2 == 0 and g.vehicles.size() < 8 and g.money > 50000:
 		var c := _random_city(true)
 		if c != null:
-			g.vehicle_sys.purchase(g, Vehicle.Type.VAN, c.id)
+			var vtype := Vehicle.Type.VAN
+			if _strategy == "truck":
+				vtype = Vehicle.Type.TRUCK
+			elif _strategy == "mix":
+				vtype = Vehicle.Type.TRUCK if g.vehicles.size() % 3 == 2 else Vehicle.Type.VAN
+			g.vehicle_sys.purchase(g, vtype, c.id)
 	# 每 4 天建 1 个站点（最多 6 个）
 	if g.day % 4 == 0 and g.stations.size() < 6 and g.money > 50000:
 		var c := _random_city(false)

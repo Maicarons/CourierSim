@@ -60,3 +60,12 @@ static func required_cap(t: int) -> int:
 
 static func penalty_mult(t: int) -> float:
 	return PENALTY_MULT.get(t, 1.0)
+
+## 货种对应的像素图标资源 id（assets/images/cargo_*.png）
+static func icon_of(t: int) -> String:
+	match t:
+		Type.COLDCHAIN: return "cargo_coldchain"
+		Type.PHARMA: return "cargo_pharma"
+		Type.HAZMAT: return "cargo_hazmat"
+		Type.INTERNATIONAL: return "cargo_international"
+		_: return "cargo_standard"

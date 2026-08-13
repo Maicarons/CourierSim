@@ -14,9 +14,9 @@
     "type": 1,
     "label": "厢式货车",
     "capacity_kg": 3000,
-    "speed_kmh": 85,
-    "km_per_day": 600,
-    "cost": 180000,
+    "speed_kmh": 95,
+    "km_per_day": 700,
+    "cost": 140000,
     "fuel_per_km": 1.6,
     "maintenance_per_day": 200,
     "cap": 4
