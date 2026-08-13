@@ -1,110 +1,122 @@
 [
   {
     "id": "first_vehicle",
-    "icon": "veh_van",
+    "icon": "ach_first_vehicle",
     "name": "车轮滚滚",
     "name_en": "Wheels Rolling",
     "desc": "购置第一辆车",
     "desc_en": "Buy your first vehicle",
-    "metric": "vehicles", "count": 1
+    "metric": "vehicles",
+    "count": 1
   },
   {
     "id": "fleet_five",
-    "icon": "veh_truck",
+    "icon": "ach_fleet_five",
     "name": "车队成型",
     "name_en": "Fleet Formed",
     "desc": "车队达到 5 辆",
     "desc_en": "Grow your fleet to 5 vehicles",
-    "metric": "vehicles", "count": 5
+    "metric": "vehicles",
+    "count": 5
   },
   {
     "id": "first_delivery",
-    "icon": "ui_order",
+    "icon": "ach_first_delivery",
     "name": "首单达成",
     "name_en": "First Delivery",
     "desc": "完成首单配送",
     "desc_en": "Complete the first delivery",
-    "metric": "delivered", "count": 1
+    "metric": "delivered",
+    "count": 1
   },
   {
     "id": "deliver_50",
-    "icon": "cargo_standard",
+    "icon": "ach_deliver_50",
     "name": "物流达人",
     "name_en": "Logistics Pro",
     "desc": "累计配送 50 单",
     "desc_en": "Deliver 50 orders in total",
-    "metric": "delivered", "count": 50
+    "metric": "delivered",
+    "count": 50
   },
   {
     "id": "network_hubs",
-    "icon": "bld_hub",
+    "icon": "ach_network_hubs",
     "name": "枢纽网络",
     "name_en": "Hub Network",
     "desc": "建设 3 个中转仓库",
     "desc_en": "Build 3 hubs",
-    "metric": "hubs", "count": 3
+    "metric": "hubs",
+    "count": 3
   },
   {
     "id": "network_stations",
-    "icon": "bld_station",
+    "icon": "ach_network_stations",
     "name": "遍地开花",
     "name_en": "Everywhere",
     "desc": "建设 5 个末端站点",
     "desc_en": "Build 5 stations",
-    "metric": "stations", "count": 5
+    "metric": "stations",
+    "count": 5
   },
   {
     "id": "staff_team",
-    "icon": "char_courier",
+    "icon": "ach_staff_team",
     "name": "团队壮大",
     "name_en": "Growing Team",
     "desc": "招聘 5 名员工",
     "desc_en": "Hire 5 staff",
-    "metric": "staff", "count": 5
+    "metric": "staff",
+    "count": 5
   },
   {
     "id": "tech_research",
-    "icon": "ui_tech",
+    "icon": "ach_tech_research",
     "name": "科研先锋",
     "name_en": "Research Pioneer",
     "desc": "解锁 3 项科技",
     "desc_en": "Unlock 3 techs",
-    "metric": "techs", "count": 3
+    "metric": "techs",
+    "count": 3
   },
   {
     "id": "millionaire",
-    "icon": "ui_coin",
+    "icon": "ach_millionaire",
     "name": "百万资产",
     "name_en": "Millionaire",
     "desc": "总资产突破 100 万",
     "desc_en": "Total assets over 1,000,000",
-    "metric": "assets", "count": 1000000
+    "metric": "assets",
+    "count": 1000000
   },
   {
     "id": "share_30",
-    "icon": "ui_finance",
+    "icon": "ach_share_30",
     "name": "市场霸主",
     "name_en": "Market Dominator",
     "desc": "市场占有率突破 45%（多对手竞争中）",
     "desc_en": "Market share over 45% (amid competitors)",
-    "metric": "share", "count": 45
+    "metric": "share",
+    "count": 45
   },
   {
     "id": "day_30",
-    "icon": "ui_calendar",
+    "icon": "ach_day_30",
     "name": "经营满月",
     "name_en": "One Month",
     "desc": "连续经营 30 天",
     "desc_en": "Run the company for 30 days",
-    "metric": "days", "count": 30
+    "metric": "days",
+    "count": 30
   },
   {
     "id": "world_traveler",
-    "icon": "ui_globe",
+    "icon": "ach_world_traveler",
     "name": "开疆拓土",
     "name_en": "Expansion",
     "desc": "解锁第 2 个区域",
     "desc_en": "Unlock a second region",
-    "metric": "regions", "count": 2
+    "metric": "regions",
+    "count": 2
   }
 ]

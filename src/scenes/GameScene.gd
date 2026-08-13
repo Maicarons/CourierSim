@@ -13,20 +13,21 @@ class_name GameScene
 ## 文案由 Localization 提供（中英切换）。
 
 const TAB_GROUPS := [
-	["tab.group.ops", ["map", "orders", "vehicles"]],
+	["tab.group.ops", ["overview", "map", "orders", "vehicles"]],
 	["tab.group.fac", ["hubs", "stations"]],
 	["tab.group.dev", ["marketing", "tech", "staff"]],
 	["tab.group.mng", ["finance", "region"]],
 ]
 
 const TAB_ICONS := {
+	"overview": "ui_chart",
 	"map": "ui_globe", "orders": "ui_order", "vehicles": "veh_van",
 	"hubs": "bld_hub", "stations": "bld_station",
 	"marketing": "ui_marketing", "tech": "ui_tech", "staff": "char_courier",
 	"finance": "ui_finance", "region": "bld_hq",
 }
 
-const TABS_FLAT := ["map", "orders", "vehicles", "hubs", "stations",
+const TABS_FLAT := ["overview", "map", "orders", "vehicles", "hubs", "stations",
 	"marketing", "tech", "staff", "finance", "region"]
 
 var top_bar: HBoxContainer
@@ -46,6 +47,7 @@ var dialogue: DialogueBox
 var tutorial: TutorialSystem
 var pause_layer: CanvasLayer
 var pause_menu: PauseMenu
+var achievement_banner: AchievementBanner
 var current_tab := "map"
 var log_lines: Array[String] = []
 var _dlg_queue: Array[Dictionary] = []
@@ -64,6 +66,8 @@ func _ready() -> void:
 	pause_menu.settings_requested.connect(_on_settings)
 	pause_menu.about_requested.connect(_on_about)
 	pause_menu.menu_requested.connect(_on_to_menu)
+	achievement_banner = AchievementBanner.new()
+	pause_layer.add_child(achievement_banner)
 	tutorial.beat_triggered.connect(_on_beat)
 	tutorial.objective_changed.connect(_on_objective_changed)
 	tutorial.tutorial_completed.connect(_on_tutorial_completed)
@@ -323,6 +327,7 @@ func rebuild_list(tab: String) -> void:
 		ch.queue_free()
 	var p: VBoxContainer = null
 	match tab:
+		"overview": p = OverviewPanel.new()
 		"vehicles": p = VehiclePanel.new()
 		"hubs": p = HubPanel.new()
 		"stations": p = StationPanel.new()

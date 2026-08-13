@@ -13,6 +13,9 @@ func _ready() -> void:
 	_ok(GameManager.active_slot == "autosave", "active_slot 默认 autosave")
 	_ok(GameManager.game_over_emitted == false, "game_over_emitted 初始 false")
 
+	# 0. UI 面板构建验证
+	_build_all_panels()
+
 	# 2. 构造车队/站点/仓库/员工
 	var v := Vehicle.new(GameManager.uid("veh"), "测试面包车", Vehicle.Type.VAN, 500, 70.0, 60000)
 	GameManager.vehicles.append(v)
@@ -83,6 +86,19 @@ func _ready() -> void:
 	var verdict := "PASS" if _fail == 0 else "FAIL"
 	print("[SMOKE] %s（失败 %d）" % [verdict, _fail])
 	get_tree().quit(0 if _fail == 0 else 1)
+
+
+## 构建各 UI 面板验证无运行时错误
+func _build_all_panels() -> void:
+	var panels := [
+		OverviewPanel.new(), VehiclePanel.new(), HubPanel.new(), StationPanel.new(),
+		OrderPanel.new(), MarketingPanel.new(), TechPanel.new(), StaffPanel.new(),
+		FinancePanel.new(), RegionPanel.new(),
+	]
+	for p in panels:
+		p.build()
+		p.queue_free()
+	_ok(true, "全部 10 个面板构建 OK")
 
 
 func _ok(cond: bool, msg: String) -> void:

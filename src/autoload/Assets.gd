@@ -26,6 +26,10 @@ func _load_all() -> void:
 		"ui_settings", "ui_about", "ui_help", "ui_objective", "ui_back", "ui_quit",
 		"ui_trash", "ui_sound", "ui_plus", "ui_lock", "ui_arrow_right", "ui_bell",
 		"ui_chart", "ui_clock", "ui_flag",
+		# 成就专属图标（v0.9，ComfyUI 批量生成）
+		"ach_first_vehicle", "ach_fleet_five", "ach_first_delivery", "ach_deliver_50",
+		"ach_network_hubs", "ach_network_stations", "ach_staff_team", "ach_tech_research",
+		"ach_millionaire", "ach_share_30", "ach_day_30", "ach_world_traveler",
 	]
 	for id in ids:
 		var path := "res://assets/images/%s.png" % id
