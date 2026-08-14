@@ -40,6 +40,10 @@ func purchase(game: GameManager, type: int, home_city_id: String) -> Vehicle:
 	v.maintenance_per_day = float(c.get("maintenance_per_day", 0.0))
 	v.capabilities = int(c.get("cap", 0))
 	v.home_city_id = home_city_id
+	# 新车初始停驻 home 城市（地图坐标），避免显示在原点 (0,0)
+	var home: City = RegionManager.current.get_city(home_city_id) if RegionManager.current != null else null
+	if home != null:
+		v.map_pos = RegionManager.local(home)
 	game.vehicles.append(v)
 	EventBus.vehicles_changed.emit()
 	game.mark_objective("obj.buy_vehicle")
@@ -74,6 +78,10 @@ func lease(game: GameManager, type: int, home_city_id: String) -> Vehicle:
 	v.maintenance_per_day = float(c.get("maintenance_per_day", 0.0))
 	v.capabilities = int(c.get("cap", 0))
 	v.home_city_id = home_city_id
+	# 租赁车同样初始停驻 home 城市
+	var home_c: City = RegionManager.current.get_city(home_city_id) if RegionManager.current != null else null
+	if home_c != null:
+		v.map_pos = RegionManager.local(home_c)
 	v.owned = false
 	v.lease_daily = int(c.get("lease_daily", int(c.get("cost", 0)) * 2 / 100))
 	game.vehicles.append(v)
@@ -143,7 +151,7 @@ func _deliver(v: Vehicle) -> void:
 	if order != null:
 		order.status = Order.Status.DELIVERED
 		GameManager.add_money(order.reward, "delivery", "配送 %s" % order.id)
-		GameManager.change_reputation(2.0)
+		GameManager.change_reputation(1.5)
 		EventBus.orders_changed.emit()
 		if not GameManager.objective_done[3]:
 			GameManager.mark_objective("obj.first_delivery")

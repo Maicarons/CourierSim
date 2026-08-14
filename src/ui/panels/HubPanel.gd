@@ -15,7 +15,7 @@ func build() -> void:
 	UI.header(self, Localization.t("panel.hubs.new"))
 	var brow := HBoxContainer.new()
 	brow.add_child(_city_opt)
-	brow.add_child(UI.button(Localization.t("btn.build") % 8000, _on_build))
+	brow.add_child(UI.button(Localization.t("btn.build") % HubSystem.HUB_BASE_COST, _on_build))
 	add_child(brow)
 
 func _on_build() -> void:

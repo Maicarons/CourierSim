@@ -74,7 +74,12 @@ func _build_order_row(o: Order, accent: Color) -> void:
 	var oname := oc.display_name() if oc else "?"
 	var dname := dc.display_name() if dc else "?"
 	var cargo_icon := Assets.get_image(CargoType.icon_of(o.cargo_type))
-	var title := "%s → %s" % [oname, dname]
+	# 快件（≤28kg）加「快件」前缀，提示玩家可用无人机承运
+	var title := ("%s → %s" % [oname, dname])
+	var tag := ""
+	if o.weight_kg <= 28.0:
+		tag = Localization.t("order.parcel_tag") + " "
+	title = tag + title
 
 	var parts: Array[String] = []
 	parts.append("%.0fkg" % o.weight_kg)

@@ -39,13 +39,13 @@
     "type": 3,
     "label": "配送无人机",
     "capacity_kg": 30,
-    "speed_kmh": 60,
-    "km_per_day": 400,
-    "cost": 90000,
-    "fuel_per_km": 0.2,
+    "speed_kmh": 110,
+    "km_per_day": 1500,
+    "cost": 80000,
+    "fuel_per_km": 0.08,
     "maintenance_per_day": 60,
     "cap": 0,
-    "lease_daily": 1800
+    "lease_daily": 1600
   },
   {
     "type": 4,

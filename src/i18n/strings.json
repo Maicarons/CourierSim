@@ -319,6 +319,7 @@
     "toast.ach_banner": "🏅 成就解锁！",
     "mode_name.career": "生涯模式",
     "mode_name.sandbox": "沙盒模式",
+    "order.parcel_tag": "快件",
     "order.group.pending": "待分配",
     "order.group.intransit": "在途",
     "order.group.delivered": "已送达",
@@ -673,6 +674,7 @@
     "toast.ach_banner": "🏅 Achievement unlocked!",
     "mode_name.career": "Career Mode",
     "mode_name.sandbox": "Sandbox Mode",
+    "order.parcel_tag": "Parcel",
     "order.group.pending": "Pending",
     "order.group.intransit": "In Transit",
     "order.group.delivered": "Delivered",
@@ -708,3 +710,4 @@
     "cat.loan": "Loan"
   }
 }
+

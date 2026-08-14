@@ -15,7 +15,7 @@ func build() -> void:
 	_city_opt = UI.city_option()
 	var brow := HBoxContainer.new()
 	brow.add_child(_city_opt)
-	brow.add_child(UI.button(Localization.t("btn.build") % 3000, _on_build))
+	brow.add_child(UI.button(Localization.t("btn.build") % StationSystem.STATION_COST, _on_build))
 	add_child(brow)
 
 func _on_build() -> void:

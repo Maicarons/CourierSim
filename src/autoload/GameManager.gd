@@ -249,19 +249,19 @@ func delivered_count() -> int:
 ## 生涯评级：S/A/B/C（声誉、市占、资产综合）
 func rating() -> String:
 	var score := 0
-	if reputation >= 80.0:
+	if reputation >= 90.0:
 		score += 2
-	elif reputation >= 60.0:
+	elif reputation >= 70.0:
 		score += 1
-	if competitor_sys.player_share() >= 0.35:
+	if competitor_sys.player_share() >= 0.45:
 		score += 2
-	elif competitor_sys.player_share() >= 0.20:
+	elif competitor_sys.player_share() >= 0.25:
 		score += 1
-	if total_assets() >= 1500000:
+	if total_assets() >= 1200000:
 		score += 2
 	elif total_assets() >= 800000:
 		score += 1
-	if score >= 5:
+	if score >= 6:
 		return "S"
 	if score >= 4:
 		return "A"

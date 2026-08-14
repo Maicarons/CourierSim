@@ -7,8 +7,14 @@ const HUB_BASE_COST := 600000   # 中转仓库基础造价（参考 TransRoute �
 const HUB_BASE_CAP := 200
 
 func process_day(game: GameManager) -> void:
+	# 统计每个仓城市当日产生/路过的订单数（吞吐占用），次日重置
 	for h in game.hubs:
-		h.used_today = 0
+		var cnt := 0
+		for o in game.orders:
+			if (o.origin_id == h.city_id or o.dest_id == h.city_id) and \
+				(o.status == Order.Status.PENDING or o.status == Order.Status.INTRANSIT or o.status == Order.Status.DELIVERED):
+				cnt += 1
+		h.used_today = cnt
 
 func build(game: GameManager, city_id: String) -> Hub:
 	if not game.spend(HUB_BASE_COST, "hub", "建设中转仓库"):
