@@ -1,87 +1,80 @@
 # 订单与货流（Order & Cargo Flow）
 
-订单系统是"血液"，连接站点、仓库、车辆三者的货流，是经营成果的直接体现。
+> 适用版本：v0.12+ · 站点门控生成 · 真实里程计价 · 小时制时限
 
-## 一、货单（Shipment）生命周期
+订单系统是"血液"，连接站点、车辆与收益。v0.12 起**只有建了站/仓的城市才产生订单**——未建网络的城市不再空转货流。
 
-```
-生成 → 收件 → 集货 → 干线 → 分拣 → 干线 → 派送 → 签收
-(生成) (站点) (站点) (车辆) (Hub)  (车辆) (站点) (完成)
-```
+## 一、订单生命周期
 
 ```
-Shipment {
-  id: String
-  origin_station: String
-  dest_station: String
-  cargo_type: Enum      // 普通/生鲜/医药/危险品/加急
-  weight_kg: float
-  volume_m3: float
-  price: float          // 运费
-  deadline: Time        // 时效要求
-  status: Enum          // 状态机
-  created_day: int
-  priority: int         // 优先级（加急 > 普通）
-}
+生成(PENDING) → 派单(INTRANSIT) → 送达(DELIVERED) 或 超时(TIMEOUT)
 ```
-
-## 二、货量生成（Demand Generation）
-
-货量由**需求模型**驱动，每日 tick 生成：
-
-```
-OD货量 = 区域需求密度(起点) × 区域需求密度(终点) × 距离衰减
-       × 公司知名度系数 × 公司评分份额 × 随机波动
-```
-
-- **需求密度**：来自真实地理数据（人口/商业/工业 POI 密度）。
-- **距离衰减**：长途单比短途单少（符合真实）。
-- **公司评分份额**：多公司竞争时按评分分配（见 [竞争](/gameplay/events)）；沙盒无对手则全额。
-
-## 三、货种（Cargo Types）
-
-| 货种 | 利润 | 时效要求 | 特殊要求 |
-|------|------|---------|----------|
-| 普通件 | 低 | 宽松 | 无 |
-| 加急件 | 高 | 极严 | 违约重罚 |
-| 生鲜冷链 | 高 | 严 | 需冷藏车/冷链仓 |
-| 医药 | 高 | 严 | 需资质+冷链 |
-| 危险品 | 极高 | 中 | 需特种车+许可 |
-| 大件/重货 | 中 | 宽松 | 需重卡 |
-
-货种解锁与车辆/仓库/科技绑定，形成"解锁新货种 → 新利润增长点"的推进节奏。
-
-## 四、路由（Routing）
-
-货物从起点到终点的路径由**网络拓扑**决定：
-
-- **单 Hub**：`站点A → Hub → 站点B`。
-- **多级 Hub**：`站点A → 区域Hub → 全国Hub → 区域Hub → 站点B`。
-- **直达**：同城或短途可直接 `站点A → 站点B`。
-- 路由由 `RoutePlanner` 基于当前网络图（AStar2D 加权图）计算，权重=距离/成本/时效混合。
-
-## 五、时效与违约
-
-- **承诺时效**：根据车型/距离/中转次数估算。
-- **实际时效**：运输 + 中转等待时间累加。
-- **违约惩罚**：超时 → 罚款 + 满意度下降；严重违约 → 丢客户。
-
-## 六、技术实现要点
-
-- 货单是**纯数据对象（RefCounted/Resource）**，不渲染为物理实体，仅在地图车辆上显示"载货 N 件"标签。
-- `DemandSystem` 每日生成货单，`FlowSystem` 推进状态机，二者均为 Autoload。
-- 货流可视化：车辆上气泡显示货量，Hub 显示积压队列，站点显示待收/待派。
 
 ```gdscript
-# 货单状态机（示意）
-enum ShipmentStatus { CREATED, PICKED, INBOUND, SORTING, OUTBOUND, DELIVERING, SIGNED, FAILED }
-
-func advance(shipment: Shipment):
-    match shipment.status:
-        ShipmentStatus.PICKED:
-            ship_to_hub(shipment)
-        ShipmentStatus.SORTING:
-            sort_and_forward(shipment)
-        ShipmentStatus.OUTBOUND:
-            deliver(shipment)
+# src/core/Order.gd
+enum Status { PENDING, INTRANSIT, DELIVERED, TIMEOUT }
 ```
+
+- `Order` 是纯数据对象（RefCounted），字段含 origin_id / dest_id / cargo_type / weight_kg / distance_m / distance_days / reward / created_day / deadline_day / assigned_vehicle_id。
+- 待分配订单在地图上画**橙色虚线**，在途订单画**蓝色实线 + 流动光点**（见[真实地图渲染](/map/real-map)）。
+
+## 二、站点门控生成（v0.12 核心）
+
+```gdscript
+func served_cities(game) -> Array[City]   # 已建站点(Station)或中转仓(Hub)的城市
+func spawn_one(game) -> void:
+    var served := served_cities(game)
+    if served.size() < 2: return          # 网络未成型 → 无跨城订单
+    origin := 随机从 served 中按需求加权选取
+    dest   := 随机从 served 中选取（≠ origin）
+```
+
+- **未建站的城市不再产生订单**：玩家必须先布局网络（首府免费赠送 1 个中转仓起步），再在目标城市建站/建仓，才能把该城市接入货流。
+- 日均生成量：`compute_spawn = max(1, 站点数 × 0.8) × demand_mult × 区域需求加成`。
+- 订单权重：城市 `base_demand × 10` + 站点 `marketing_level` 加成，站点多的城市更易成为发货端。
+
+## 三、货种与能力矩阵
+
+| 货种 | 奖励倍率 | 要求 | 能力位 |
+|---|---|---|---|
+| 标准货 | 1.0× | 任意车辆 | STANDARD=0 |
+| 冷链 | 1.6× | 冷藏车 | COLDCHAIN=1 |
+| 医药 | 1.9× | 冷藏车 | PHARMA=2 |
+| 危险品 | 2.2× | 厢式货车 | HAZMAT=4 |
+| 国际件 | 2.4× | 飞机/货轮 | INT=8 |
+
+- 无对应能力车辆时，特殊货**自动降级为标准货**，保证订单池不卡死。
+- 特殊货种同时计入**区域特色事件**加成（如半导体出货潮 → 需求 ×1.2）。
+
+## 四、奖励与时限（真实里程 · 小时制）
+
+```gdscript
+# 奖励：按「吨·公里」计价（参考 TransRoute rate.costPerTonKm 量级）
+func reward_for(game, distance_m, cargo, weight) -> int:
+    var km   := distance_m / 1000.0
+    var tons := weight / 1000.0
+    var base := km * tons * 45.0 * (1.0 + weight * 0.004)
+    var r := int(base * CargoType.reward_mult(cargo) * modifiers["reward_mult"])
+    return max(800, r)                    # 保底 800 元
+
+# 时限：真实行驶小时 + 处理缓冲小时
+o.distance_days = GeoMath.travel_days(dist, 80.0)        # 24h 制
+var buffer_h := 24.0                                     # 基础 1 天处理
+if cargo == INTERNATIONAL: buffer_h = 36.0
+o.deadline_day = game.day + int(ceil(o.distance_days + buffer_h / 24.0))
+```
+
+- **超时惩罚**：`TIMEOUT` 订单声誉 −1.5（货种倍率加权），无运费。
+- **交付奖励**：+2.0 声誉 + 全额运费（`reward_for` 结果）。
+- 声誉不对称问题在 v0.12 平衡轮中修正：奖励（+2.0）高于惩罚（−1.5），保证口碑可恢复。
+
+## 五、派单（自动 / 手动）
+
+- **自动派单**（订单页顶部 CheckButton，默认开）：`OrderSystem.auto_assign_enabled = true` 时，`advance_day` 内自动把待分配订单派给可承运空闲车辆。
+- **手动派单**：关闭自动后，每张待分配卡出现「派单 ▸」按钮，弹出 `VehiclePicker`，按距发货城市距离升序列出**可承运 + 空闲 + 载重足够**的车辆；无车可用时给出引导提示。
+
+## 六、与地图/区域的联动
+
+- 订单端点城市必须属于**当前区域**；跨区域订单通过解锁第二区域后自然产生。
+- 区域 `features.demand_bonus`（越南/马来西亚 1.05）提升该区域订单量。
+- 订单生成、派单、送达全程由 `OrderSystem.process_day` 驱动，`EventBus.orders_changed` 通知 UI 刷新。

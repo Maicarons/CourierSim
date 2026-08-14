@@ -1,6 +1,8 @@
-# 存档系统
+# 存档系统（GameSave）
 
-存档是模拟经营游戏的"生命线"，采用**JSON + 版本迁移 + 原子写**的成熟方案，保证跨版本兼容与崩溃安全。
+> 适用版本：v0.12 · JSON + 版本迁移 + 原子写 · 多槽位
+
+存档采用 **JSON + 版本迁移 + 原子写**，实现于 `src/save/GameSave.gd` 与 `src/autoload/SaveManager.gd`。
 
 ## 一、格式选择
 
@@ -9,133 +11,114 @@
 | JSON + FileAccess | 可读、可 diff、易迁移 | ✅ 主选 |
 | ResourceSaver (.tres) | 类型安全，但重构易坏档 | 不用于存档 |
 | 二进制 store_var | 紧凑，但难迁移/调试 | 不用于存档 |
-| ConfigFile | 仅适合小配置 | 只存设置 |
+| ConfigFile | 仅适合小配置 | 只存设置（`user://settings.cfg`） |
 
-## 二、存档数据结构
+## 二、存档结构（GameSave.to_dict / from_dict）
 
 ```json
 {
-  "version": 3,
-  "meta": {
-    "slot": 0,
-    "mode": "career",
-    "timestamp": 1723456789,
-    "playtime_sec": 36000,
-    "current_region": "korea",
-    "current_day": 128
-  },
-  "company": {
-    "name": "我的快递",
-    "cash_cents": 1234567,
-    "credit_score": 80,
-    "loans": [],
-    "tech_unlocked": ["auto_sort_1"],
-    "awareness": { "korea": {"首尔": 45, "釜山": 30} }
-  },
-  "fleet": {
-    "vehicle_001": {
-      "model": "van", "home_hub": "hub_seoul_1",
-      "status": "TRANSIT", "odometer_km": 12000,
-      "condition": 0.85, "assigned_route": "..."
-    }
-  },
-  "hubs": {
-    "hub_seoul_1": { "level": 2, "position": {"x": 100, "y": 200}, "...": "..." }
-  },
-  "stations": { "...": "..." },
-  "staff": { "...": "..." },
-  "regions": {
-    "korea": { "...": "..." },
-    "vietnam": { "...": "..." }   // 各区域资产独立
-  }
+  "version": 1,
+  "mode": "career",
+  "day": 12,
+  "hour_of_day": 7,
+  "money": 842000,
+  "reputation": 62.0,
+  "company_name": "我的快递",
+  "region_id": "korea",
+  "unlocked_regions": ["korea"],
+  "modifiers": { "demand_mult": 1.0, "speed_mult": 1.0 },
+  "id_counter": 42,
+  "objective_done": { "obj.build_hub": true },
+  "tutorial_step": 3,
+  "achievements": ["ach.first_order"],
+  "debt": 0,
+  "vehicles": [
+    { "id": "veh_1", "name": "面包车 1", "type": 0, "capacity_kg": 500,
+      "speed_kmh": 70, "km_per_day": 620, "cost": 60000,
+      "fuel_per_km": 0.6, "maintenance_per_day": 80,
+      "capabilities": 0, "owned": true, "lease_daily": 1200,
+      "assigned_hub_id": "", "home_city_id": "seoul",
+      "status": 1, "current_order_id": "ord_1",
+      "route_from": [0, 0], "route_to": [0, 0],
+      "route_path": [[x, y], "..."],
+      "travel_progress": 0.3, "travel_total_days": 0.4, "travel_elapsed_days": 0.12 }
+  ],
+  "hubs": [{ "id": "hub_1", "name": "首尔中转仓", "city_id": "seoul", "level": 1 }],
+  "stations": [{ "id": "st_1", "city_id": "busan", "marketing_level": 0 }],
+  "orders": [{ "id": "ord_1", "origin_id": "seoul", "dest_id": "busan", "..." }],
+  "staff": [ "..." ],
+  "techs": [true, false, "..."],
+  "sandbox_cfg": { "funds_mult": 1.0, "events": true, "competition": 1 }
 }
 ```
+
+v0.12 新增字段：`hour_of_day`（小时制）、`debt`（负债）、车辆 `owned` / `lease_daily` / `route_path`（折线行程）。
 
 ## 三、SaveManager 实现
 
 ```gdscript
-class_name SaveManager
-extends Node
-
+# src/autoload/SaveManager.gd（摘录）
 const SAVE_DIR := "user://saves/"
-const SAVE_VERSION := 3
-const MAX_SLOTS := 8
+const MAX_SLOTS := 9
 
-func save_game(slot: int) -> bool:
-    var data := _serialize_all()
-    data["version"] = SAVE_VERSION
-    var path := _slot_path(slot)
-    _atomic_write(path, JSON.stringify(data, "\t"))
-
-func load_game(slot: int) -> Dictionary:
-    var path := _slot_path(slot)
-    if not FileAccess.file_exists(path):
-        return _default_save()
-    var text := FileAccess.get_file_as_string(path)
-    var data := JSON.parse_string(text)
-    if data == null:
-        return _default_save()   # 损坏则回退默认
-    data = _migrate(data)
-    _deserialize_all(data)
-    return data
+func next_free_slot() -> String   # slot_1..slot_9 中第一个空槽
+func has_slot(slot: String) -> bool
+func save_game(slot: String, data: Dictionary) -> bool   # 原子写
+func load_game(slot: String) -> Dictionary               # 读 + 版本迁移 + 容错
+func slot_label(slot: String) -> String                  # 槽位显示名
+func delete_slot(slot: String) -> void
 ```
+
+- 存档文件：`user://saves/<slot>.json`（`GameSave.to_dict/from_dict` 序列化）。
+- 读取后 `GameSave.from_dict` 回填 GameManager，`game_over_emitted` 重置允许重新判定胜负。
 
 ## 四、原子写（防崩溃损坏）
 
 先写临时文件，成功后原子替换，失败保留旧档：
 
 ```gdscript
-func _atomic_write(path: String, text: String):
+func _atomic_write(path: String, text: String) -> bool:
     var tmp := path + ".tmp"
     var f := FileAccess.open(tmp, FileAccess.WRITE)
-    if f == null: return
+    if f == null: return false
     f.store_string(text)
-    f = null   # 关闭
-    # 校验临时文件可读
+    f = null
     var check := FileAccess.open(tmp, FileAccess.READ)
     if check == null or JSON.parse_string(check.get_as_text()) == null:
-        return   # 临时文件坏，保留旧档
-    DirAccess.open("user://saves").rename(path.get_file() + ".tmp", path.get_file())
+        DirAccess.remove_absolute(tmp)   # 临时文件坏，丢弃
+        return false
+    # 替换正式文件
+    DirAccess.rename_absolute(tmp, path)
+    return true
 ```
 
 ## 五、版本迁移
 
-```gdscript
-func _migrate(data: Dictionary) -> Dictionary:
-    var v: int = data.get("version", 0)
-    if v < 2:
-        data = _migrate_v1_to_v2(data)
-    if v < 3:
-        data = _migrate_v2_to_v3(data)
-    data["version"] = SAVE_VERSION
-    return data
-```
+- `version` 字段用于迁移；`from_dict` 对缺失字段用 `d.get(key, 默认值)` 兜底，旧档自动补新字段默认值（如 `debt=0`、`owned=true`、`hour_of_day=0`）。
+- **字段增删策略**：新增字段给默认值，删除字段忽略，无需破坏旧档。
 
-- 每次更新存档结构，新增迁移函数，旧档逐级升级。
-- **字段增删**：新增字段给默认值，删除字段忽略即可，无需破坏旧档。
+## 六、多槽位与交互
 
-## 六、多槽位与元信息
+| 槽位 | 用途 |
+|---|---|
+| `slot_1` ~ `slot_9` | 手动/新建存档 |
+| `autosave` | 兼容旧版本保留 |
 
-- 最多 8 个槽位，`get_slot_info()` 返回各槽是否占用 + 元信息（时间/模式/游戏天数/公司名）。
-- 槽位选择界面只读元信息，不加载完整存档（快速）。
+- **主菜单 → 继续游戏**：槽位面板列出所有槽位（公司名 / Day / 区域 / 保存时间），可读取或删除。
+- **主菜单 → 新游戏**：写入 `next_free_slot()`（不覆盖已有存档），绑定为活跃槽位。
+- **游戏内保存**（顶栏 💾）：保存到当前活跃槽位；**自动存档**：每日结算后写 autosave。
 
 ## 七、序列化注意事项
 
-1. **Vector2 → `{x,y}`**：JSON 不支持 Vector2，手动转换。
-2. **枚举 → int/string**：存字符串或 int，加载时再转回。
+1. **Vector2 → [x, y]**：JSON 不支持 Vector2，手动转数组（`route_from`/`route_to`/`route_path` 均如此）。
+2. **枚举 → int**：存 int，加载 `int()` 强转回。
 3. **引用 → id**：对象间只存 id（字符串），不存对象引用，避免循环。
 4. **int 类型**：JSON 解析后数字变 float，加载时 `int()` 强转。
 
-## 八、自动存档
+## 八、设置存档（ConfigFile）
 
-- **自动存档点**：每日 tick 结束、关键操作（购车/建站）、进入/退出区域。
-- **定时兜底**：每 5 分钟自动保存到"自动槽"。
-- 避免在渲染帧内做大量序列化，放后台线程或 tick 间隙。
+音量（Master/BGM/SFX）等设置用内置 `ConfigFile` 存 `user://settings.cfg`（`AudioManager`），与进度存档分离。
 
-## 九、设置存档（ConfigFile）
+## 九、加密（可选）
 
-音量、分辨率、键位等设置用内置 `ConfigFile` 存 `user://settings.cfg`，与进度存档分离。
-
-## 十、加密（可选）
-
-若需防轻度改档，用 `FileAccess.open_encrypted_with_pass`，密钥编译进脚本。**注意**：只能防"文本编辑器手改"，不防逆向，单机游戏无需强加密。
+若需防轻度改档，用 `FileAccess.open_encrypted_with_pass`；仅防"文本编辑器手改"，单机游戏无需强加密。

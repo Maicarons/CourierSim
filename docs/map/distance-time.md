@@ -1,91 +1,82 @@
 # 距离与用时计算
 
-真实距离与用时是本作"真实地理"承诺的核心，采用**三级策略**：离线烘焙优先、公式兜底、运行时插值。
+> 适用版本：v0.12+ · OSRM 真实路网烘焙 · 运行时查表 · Haversine 兜底
+
+真实距离与用时是本作"真实地理"承诺的核心。v0.12 用 **OSRM（OpenStreetMap 路网引擎）** 一次性烘焙
+城市对真实里程/耗时/折线为静态 JSON，运行时查表；无路网数据（如跨海）自动回退 Haversine。
 
 ## 一、三级计算策略
 
 | 级别 | 方法 | 精度 | 适用 |
 |------|------|------|------|
-| L1 | 预烘焙距离矩阵（OSRM 批量） | 最高（真实路网） | 城市对/站点对，运行时查表 |
-| L2 | Haversine 大圆距离 × 绕路系数 | 中（近似） | 无矩阵数据的临时计算 |
-| L3 | 运行时路网寻路（AStar2D） | 中高 | 车辆在地图上的实际行驶路径 |
+| L1 | **OSRM 烘焙矩阵**（`<id>_routes.json`） | 最高（真实路网里程/耗时/折线） | 同区域城市对，运行时查表 |
+| L2 | Haversine 大圆距离 × 绕路系数 | 中（近似） | 无烘焙数据的临时计算（如跨海对） |
+| L3 | 直线插值（地图绘制） | 低 | 路线数据缺失时车辆移动的视觉兜底 |
 
-## 二、L1：预烘焙距离矩阵
+## 二、L1：OSRM 烘焙（tools/bake_routes.py）
 
-开发期用 OSRM 批量计算所有城市对/重要节点的真实距离与用时，烘焙为矩阵：
+```bash
+python tools/bake_routes.py    # 遍历 4 区域所有城市对 → 调 OSRM 公共服务器
+```
+
+- **数据源**：`https://router.project-osrm.org`（公共实例，driving profile，overview=full geojson）。
+- **产物**：`res://src/map/data/regions/<id>_routes.json`：
 
 ```json
 {
-  "首尔": { "釜山": {"dist_km": 400.0, "hours": 4.2, "path": [[126.9,37.5], ...]},
-            "仁川": {"dist_km": 36.0, "hours": 0.5, "path": [...]} },
-  "釜山": { "首尔": {"dist_km": 400.0, "hours": 4.3, "path": [...]} }
+  "routes": [
+    { "a": "seoul", "b": "busan",
+      "dist_km": 392.6, "dur_h": 4.85,
+      "path": [[126.978, 37.5665], [127.1, 37.5], "..."] }
+  ]
 }
 ```
 
-- **批量脚本**：复用 TransRoute 的 `osrmMetrics` 思路，脚本遍历城市对调 OSRM（本地或公共）。
-- **稀疏化**：只烘焙重要城市对（N 个城市 → N² 对），站点级距离用 Haversine 或就近城市插值。
-- **路径折线**：`path` 用于渲染车辆沿真实道路行驶的折线（可选，量大则只存距离）。
+- **简化**：Douglas-Peucker 压缩折线点（距离阈值按比例），减小包体；`dist_km`/`dur_h` 保持 OSRM 原始值。
+- **成果**：korea / hainan / vietnam 全量成功（163 条真实路网）；malaysia 11/21——跨海城市对
+  （如新山→沙巴）OSRM 无路网连接（HTTP 400），运行时自动回退 L2，符合预期。
+- 烘焙需联网且受公共实例速率限制，属**开发期一次性工具**；游戏运行时零网络、零延迟。
 
-## 三、L2：Haversine 兜底
-
-```
-距离 ≈ Haversine(A, B) × 绕路系数(1.25~1.4)
-用时 ≈ 距离 / 平均速度 × 路况系数
-```
-
-- **绕路系数**：公路非直线，乘以经验系数修正（TransRoute 已验证此方案）。
-- **路况系数**：高速路 1.0、城市路 1.5、山区 2.0（可基于路网类型统计）。
-
-## 四、L3：运行时路网寻路
-
-车辆在地图上的**实际行驶**用游戏内路网图寻路（见 [模块实现](/architecture/modules)）：
-
-- 路网图为加权图，边权重 = 真实距离（烘焙时附带）。
-- 车辆沿寻路得到的折线移动，行驶距离 = 路径累加，用时 = 距离 / 车速。
-
-## 五、用时模型（含装卸与中转）
-
-总用时 = 运输时间 + 装卸时间 + 中转等待时间
-
-```
-运输时间 = Σ(路段距离 / 路段车速)
-装卸时间 = 货量 / 装卸效率（站点/仓库等级、员工加成）
-中转等待 = 排队时间（吞吐瓶颈）+ 分拣时间
-```
-
-> 真实快递的"时效"由多环节累加，本作同样体现，让"优化中转"有实际收益。
-
-## 六、速度分层
-
-| 道路等级 | OSM highway | 速度 |
-|----------|-------------|------|
-| 高速 | motorway | 100 km/h |
-| 国道/主干 | trunk/primary | 80 km/h |
-| 次干道 | secondary | 60 km/h |
-| 城市路 | tertiary/residential | 40 km/h |
-
-车辆实际速度 = min(车辆巡航速度, 路段限速) × 路况/天气系数。
-
-## 七、技术实现要点
+## 三、运行时查表（Region.route_between）
 
 ```gdscript
-# DistanceService.gd（Autoload）
-class_name DistanceService
-extends Node
+# src/core/Region.gd（摘录）
+var _routes: Dictionary = {}    # "a|b" -> {dist_km, dur_h, path_m}，懒加载
 
-var matrix: Dictionary = {}   # 距离矩阵
-
-func load_region_matrix(region_id: String):
-    matrix = load("res://data/regions/%s/distance_matrix.json" % region_id)
-
-func distance_km(a: String, b: String) -> float:
-    if matrix.has(a) and matrix[a].has(b):
-        return matrix[a][b]["dist_km"]
-    # L2 兜底
-    var ca = CityCatalog.get_city(a)
-    var cb = CityCatalog.get_city(b)
-    return GeoUtils.haversine_km(ca.lng, ca.lat, cb.lng, cb.lat) * 1.3
-
-func duration_hours(a: String, b: String, speed_kmh: float) -> float:
-    return distance_km(a, b) / speed_kmh
+func route_between(a_id: String, b_id: String) -> Dictionary
+func real_distance_m(a: City, b: City) -> float      # L1 优先，L2 兜底
+func real_duration_h(a: City, b: City) -> float      # L1 优先，公式兜底
 ```
+
+- `path_m`：折线点已投影为区域局部**米制坐标**（等距圆柱投影 + 区域原点），车辆直接沿线移动。
+- 键规范化：`a|b` 与 `b|a` 同一条（无向），运行时不区分方向。
+- 订单奖励与时限**优先用真实里程/耗时**（见[订单与货流](/gameplay/order)）。
+
+## 四、L2：Haversine 兜底
+
+```gdscript
+# src/core/GeoMath.gd（摘录）
+static func haversine(lat1, lon1, lat2, lon2) -> float          # 球面距离（米）
+static func city_distance(a: City, b: City, detour := 1.25)     # × 绕路系数
+static func travel_hours(distance_m: float, speed_kmh: float)   # 24h 制用时
+static func travel_days(distance_m: float, speed_kmh: float, daily_hours := 24.0)
+```
+
+- 兜底场景：跨海城市对（马来西亚东西海岸）、未来新增区域尚未烘焙时。
+- 绕路系数 1.25 为公路非直线经验修正。
+
+## 五、用时模型（24 小时制）
+
+```
+行驶小时 = 真实里程(km) / 车速(km/h)        # 无装卸/中转等待（当前简化模型）
+订单时限 = 行驶小时 + 处理缓冲小时(24h，国际件 36h)
+```
+
+- 车辆**24 小时不间断运行**，不再按 8 小时工作制折算（见[时间系统](/gameplay/time)）。
+- 未来可扩展：装卸时间（货量/效率）、中转排队（吞吐瓶颈）累加进总时效。
+
+## 六、技术实现要点
+
+- **投影一致性**：烘焙时折线用等距圆柱投影转米制（`cos(origin_lat)` 修正）；地图渲染陆地/城市用
+  **线性 bbox 映射**（与 terrain 贴图同源）——两套只影响显示，不影响里程计算（里程取 OSRM 原值）。
+- **内存**：单区域城市对 ≤ 数百条，JSON 懒加载一次驻留，运行时零网络零延迟。

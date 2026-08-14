@@ -45,6 +45,7 @@ export default defineConfig({
           items: [
             { text: '玩法总览', link: '/gameplay/' },
             { text: '游戏模式', link: '/gameplay/modes' },
+            { text: '时间系统', link: '/gameplay/time' },
             { text: '生涯评级与存档槽位', link: '/gameplay/progression' },
             { text: '生涯模式剧情引导', link: '/gameplay/career-tutorial' },
             { text: '车辆系统', link: '/gameplay/vehicle' },

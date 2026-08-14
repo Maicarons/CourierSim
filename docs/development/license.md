@@ -38,8 +38,9 @@
 **OpenStreetMap 数据采用 ODbL 1.0**，这意味着：
 
 1. **署名**：使用 OSM 数据需注明 "© OpenStreetMap contributors"。
-2. **派生数据库**：烘焙产出的 `road_graph.json`、`distance_matrix.json` 等属于**派生数据库**，若公开分发，需按 ODbL 共享（或以等价开放许可发布）。
+2. **派生数据库**：烘焙产出的 `*_routes.json`（OSRM 真实路网矩阵）、`road_graph.json`、`distance_matrix.json` 等属于**派生数据库**，若公开分发，需按 ODbL 共享（或以等价开放许可发布）。
 3. **像素瓦片**：由 OSM 矢量派生的像素地图属于派生作品，同样受 ODbL 约束。
+4. **OSRM 折线数据（v0.12）**：`src/map/data/regions/<id>_routes.json` 由 OSRM 公共实例按 OSM 路网计算得出，属 OSM 派生数据——随游戏分发时需保留 ODbL 声明与署名（游戏「关于」页已标注数据来源）。
 
 **处理建议**：
 
