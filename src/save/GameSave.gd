@@ -11,7 +11,9 @@ static func to_dict(gm: GameManager) -> Dictionary:
 		"version": GameManager.SAVE_VERSION,
 		"mode": gm.mode,
 		"day": gm.day,
+		"hour_of_day": gm.hour_of_day,
 		"money": gm.money,
+		"debt": gm.debt,
 		"reputation": gm.reputation,
 		"company_name": gm.company_name,
 		"region_id": RegionManager.current.id if RegionManager.current else "",
@@ -33,7 +35,9 @@ static func to_dict(gm: GameManager) -> Dictionary:
 static func from_dict(gm: GameManager, d: Dictionary) -> void:
 	gm.mode = d.get("mode", "career")
 	gm.day = int(d.get("day", 1))
+	gm.hour_of_day = int(d.get("hour_of_day", 6))
 	gm.money = int(d.get("money", 0))
+	gm.debt = int(d.get("debt", 0))
 	gm.reputation = float(d.get("reputation", 50.0))
 	gm.company_name = d.get("company_name", "")
 	gm.id_counter = int(d.get("id_counter", 0))
@@ -77,9 +81,17 @@ static func veh_dict(v: Vehicle) -> Dictionary:
 		"fuel_per_km":v.fuel_per_km,"maintenance_per_day":v.maintenance_per_day,
 		"capabilities":v.capabilities,"assigned_hub_id":v.assigned_hub_id,
 		"home_city_id":v.home_city_id,"status":v.status,"current_order_id":v.current_order_id,
+		"owned":v.owned,"lease_daily":v.lease_daily,
 		"route_from":[v.route_from.x,v.route_from.y],"route_to":[v.route_to.x,v.route_to.y],
+		"route_path": _veh_path(v.route_path),
 		"travel_progress":v.travel_progress,"travel_total_days":v.travel_total_days,
 		"travel_elapsed_days":v.travel_elapsed_days}
+
+static func _veh_path(path_m: PackedVector2Array) -> Array:
+	var out: Array = []
+	for p in path_m:
+		out.append([p.x, p.y])
+	return out
 
 static func hub_dict(h: Hub) -> Dictionary:
 	return {"id":h.id,"name":h.name,"city_id":h.city_id,"level":h.level,
@@ -114,8 +126,15 @@ static func veh_from(d: Dictionary) -> Vehicle:
 	v.home_city_id = d.get("home_city_id","")
 	v.status = int(d.get("status",0))
 	v.current_order_id = d.get("current_order_id","")
+	v.owned = bool(d.get("owned", true))
+	v.lease_daily = int(d.get("lease_daily",0))
 	var rf: Array = d.get("route_from",[0,0]); v.route_from = Vector2(rf[0],rf[1])
 	var rt: Array = d.get("route_to",[0,0]); v.route_to = Vector2(rt[0],rt[1])
+	var rp: Array = d.get("route_path",[])
+	var path_m := PackedVector2Array()
+	for p in rp:
+		path_m.append(Vector2(p[0], p[1]))
+	v.route_path = path_m
 	v.travel_progress = float(d.get("travel_progress",0.0))
 	v.travel_total_days = float(d.get("travel_total_days",1.0))
 	v.travel_elapsed_days = float(d.get("travel_elapsed_days",0.0))

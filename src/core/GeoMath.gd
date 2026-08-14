@@ -29,14 +29,18 @@ static func to_local_meters(lat: float, lon: float, origin_lat: float, origin_lo
 	return Vector2(x, y)
 
 ## 两城市真实距离（米），内部用 Haversine，并乘以绕路系数模拟路网。
+## 若区域已烘焙 OSRM 真实路网，请用 RegionManager.route_between()（真实里程优先）。
 static func city_distance(a: City, b: City, detour := 1.25) -> float:
 	return haversine(a.lat, a.lon, b.lat, b.lon) * detour
 
-## 由距离（米）与速度（km/h）估算行驶时间（天，按每日 8 工作小时）。
-static func travel_days(distance_m: float, speed_kmh: float, daily_hours := 8.0) -> float:
+## 由距离（米）与速度（km/h）估算行驶时间（小时）。车辆 24 小时不间断运行。
+static func travel_hours(distance_m: float, speed_kmh: float) -> float:
 	var km := distance_m / 1000.0
-	var hours: float = km / maxf(speed_kmh, 1.0)
-	return maxf(hours / daily_hours, 0.02)
+	return km / maxf(speed_kmh, 1.0)
+
+## 由距离（米）与速度（km/h）估算行驶天数（24h 制）。兼容旧调用。
+static func travel_days(distance_m: float, speed_kmh: float, daily_hours := 24.0) -> float:
+	return maxf(travel_hours(distance_m, speed_kmh) / daily_hours, 0.02)
 
 ## 限制数值到 [min,max]
 static func clampf(v: float, lo: float, hi: float) -> float:

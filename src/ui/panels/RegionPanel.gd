@@ -11,7 +11,7 @@ func build() -> void:
 	UI.header(self, Localization.t("panel.region.title"))
 	for r in RegionManager.regions:
 		var sub := "难度 %d · 城市 %d · 解锁 %d元" % [r.difficulty, r.cities.size(), r.unlock_cost]
-		var actions := []
+		var actions: Array = []
 		if GameManager.unlocked_region_ids.has(r.id):
 			if RegionManager.current != r:
 				actions = [{text = Localization.t("btn.switch"), cb = _on_switch.bind(r.id), color = UI.BLUE}]

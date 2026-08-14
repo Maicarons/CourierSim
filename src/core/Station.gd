@@ -23,7 +23,7 @@ func marketing_mult() -> float:
 	return 1.0 + marketing_level * 0.35
 
 func marketing_upgrade_cost() -> int:
-	return 5000 * (marketing_level + 1)
+	return StationSystem.STATION_UPGRADE_BASE * (marketing_level + 1)
 
 func upgrade_marketing() -> void:
 	marketing_level = min(marketing_level + 1, 5)

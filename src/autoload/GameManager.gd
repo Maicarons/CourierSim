@@ -29,20 +29,23 @@ const _PreSave := preload("res://src/save/GameSave.gd")
 ## 并提供存档序列化。各子系统通过 class_name 引用本单例。
 
 const SAVE_VERSION := 1
-const CAREER_MONEY := 300000
+const CAREER_MONEY := 1000000
 const SANDBOX_MONEY := 1000000
-const LOAN_RATE := 0.0008   # 每日贷款利息
+const LOAN_RATE := 0.0008   # 每日贷款利息（旧：资金为负自动计息）
+const LOAN_DAILY_RATE := 0.002   # 主动借贷日息（参考 TransRoute，0.2%/天 ≈ 月 6%）
 
 # ---- 全局状态 ----
 var mode: String = "career"          # career / sandbox
 var company_name: String = ""
 var day: int = 1
+var hour_of_day: int = 0             # 0-23，车辆 24h 运行
 var money: int = 0
 var reputation: float = 50.0
 var id_counter: int = 0
 var tutorial_step: int = 0
 var game_over_emitted := false
 var active_slot: String = "autosave"   # 当前游戏绑定的存档槽位
+var debt: int = 0                    # 负债（借贷系统，日息）
 
 # ---- 实体集合 ----
 var vehicles: Array[Vehicle] = []
@@ -115,8 +118,10 @@ func new_game(p_mode: String, p_company: String, region_id: String) -> void:
 	company_name = p_company
 	RegionManager.set_current(region_id)
 	day = 1
+	hour_of_day = 6
 	reputation = 50.0
 	money = CAREER_MONEY if mode == "career" else int(SANDBOX_MONEY * float(sandbox_cfg.get("funds_mult", 1.0)))
+	debt = 0
 	id_counter = 0
 	tutorial_step = 0
 	game_over_emitted = false
@@ -125,8 +130,8 @@ func new_game(p_mode: String, p_company: String, region_id: String) -> void:
 	ach_sys.load_defs()
 	TimeSystem.speed_index = 1
 	TimeSystem.paused = false
-	TimeSystem.current_day_fraction = 0.0
-	TimeSystem.total_days = 0.0
+	TimeSystem.current_hour_fraction = 0.0
+	TimeSystem.total_hours = 0.0
 	_reset_modifiers()
 	vehicles.clear(); hubs.clear(); stations.clear(); orders.clear()
 	staff.clear(); techs.clear(); competitors.clear(); ledger.clear()
@@ -175,13 +180,21 @@ func uid(prefix: String) -> String:
 
 # ================= 模拟推进 =================
 
-## 每帧推进：平滑移动车辆（按分数天）
-func tick_frame(delta_days: float) -> void:
+## 每帧推进：平滑移动车辆（按小时）
+func tick_frame(delta_hours: float) -> void:
 	if company_name == "":
 		return
-	vehicle_sys.update_frame(delta_days)
+	vehicle_sys.update_frame(delta_hours)
 
-## 每日结算：依次驱动各子系统
+## 每小时推进：车辆移动由 tick_frame 平滑处理，这里主要推进订单时效/到达判定
+func advance_hour() -> void:
+	if company_name == "" or game_over_emitted:
+		return
+	hour_of_day += 1
+	vehicle_sys.process_hour(self)
+	EventBus.hour_changed.emit(hour_of_day)
+
+## 每日结算：依次驱动各子系统（跨天时由 TimeSystem 调用）
 func advance_day() -> void:
 	if company_name == "" or game_over_emitted:
 		return
@@ -301,6 +314,39 @@ func spend(amount: int, category: String = "misc", label: String = "") -> bool:
 
 func can_afford(amount: int) -> bool:
 	return money >= amount
+
+# ================= 借贷系统（参考 TransRoute） =================
+
+## 净资产（现金 + 资产 − 负债）
+func net_worth() -> int:
+	return total_assets() - debt
+
+## 可借上限：净资产 × 0.6 + 声誉 × 8000
+func max_loan() -> int:
+	return max(0, int(net_worth() * 0.6) + int(reputation) * 8000)
+
+func borrow(amount: int) -> bool:
+	if amount <= 0 or debt + amount > max_loan():
+		EventBus.toast.emit(Localization.t("toast.loan_limit") % max_loan())
+		return false
+	debt += amount
+	money += amount
+	_ledger(amount, "loan", "贷款入账")
+	EventBus.money_changed.emit(money)
+	EventBus.debt_changed.emit(debt)
+	return true
+
+func repay(amount: int) -> bool:
+	var amt: int = mini(amount, debt)
+	if amt <= 0 or money < amt:
+		EventBus.toast.emit(Localization.t("toast.insufficient") % amt)
+		return false
+	debt -= amt
+	money -= amt
+	_ledger(-amt, "loan", "偿还贷款")
+	EventBus.money_changed.emit(money)
+	EventBus.debt_changed.emit(debt)
+	return true
 
 func _ledger(amount: int, category: String, label: String) -> void:
 	ledger.append({"day": day, "amount": amount, "category": category, "label": label})

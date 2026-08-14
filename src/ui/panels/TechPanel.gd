@@ -8,7 +8,7 @@ func build() -> void:
 	for t in GameManager.techs:
 		var cat := Localization.t("tech.cat." + TechNode.Category.keys()[t.category])
 		var sub := t.display_desc()
-		var actions := []
+		var actions: Array = []
 		if not t.unlocked:
 			if GameManager.tech_sys.can_unlock(GameManager, t):
 				actions = [{text = Localization.t("tech.cost") % t.cost, cb = _on_unlock.bind(t), color = UI.GREEN}]

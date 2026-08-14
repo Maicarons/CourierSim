@@ -21,7 +21,10 @@ func _ready() -> void:
 	var milestone_day := 0
 	for day in DAYS:
 		_ai_turn()
-		GameManager.tick_frame(1.0)   # 显式推进一天的车队行程
+		# 新时间系统（v0.12）：1 天 = 24 游戏小时，显式推进一整天
+		for _h in 24:
+			GameManager.tick_frame(1.0)   # 推进 1 小时车队行程
+			GameManager.advance_hour()
 		GameManager.advance_day()
 		if GameManager.money < 0 and not bankrupt:
 			bankrupt = true
@@ -42,37 +45,52 @@ func _ready() -> void:
 
 func _ai_turn() -> void:
 	var g := GameManager
-	# 按策略购车（优先扩运力）
-	if g.day % 2 == 0 and g.vehicles.size() < 8 and g.money > 50000:
-		var c := _random_city(true)
-		if c != null:
-			var vtype := Vehicle.Type.VAN
-			if _strategy == "truck":
-				vtype = Vehicle.Type.TRUCK
-			elif _strategy == "mix":
-				vtype = Vehicle.Type.TRUCK if g.vehicles.size() % 3 == 2 else Vehicle.Type.VAN
-			g.vehicle_sys.purchase(g, vtype, c.id)
-	# 每 4 天建 1 个站点（最多 6 个）
-	if g.day % 4 == 0 and g.stations.size() < 6 and g.money > 50000:
+	# 新经济模型（v0.12）：站点/仓造价大幅提高，订单须两端建站。
+	# AI 策略：先建网络（首府 hub 已有）→ 扩站点 → 再按运力需求买车 → 租赁兜底。
+	# 1. 建站：每 4 天评估一次，目标 6 站，保留 30% 现金
+	if g.day % 4 == 0 and g.stations.size() < 6 and g.money > StationSystem.STATION_COST * 1.5:
 		var c := _random_city(false)
 		if c != null:
 			g.station_sys.build(g, c.id)
-	# 每 8 天建 1 个仓（最多 2 个）
-	if g.day % 8 == 0 and g.hubs.size() < 2 and g.money > 100000:
+	# 2. 建仓：已有 3 站后考虑第 2 仓（保留 40% 现金）
+	if g.day % 8 == 0 and g.stations.size() >= 3 and g.hubs.size() < 2 and g.money > HubSystem.HUB_BASE_COST * 1.4:
 		var c := _random_city(true)
 		if c != null:
 			g.hub_sys.build(g, c.id)
-	# 招聘（最多 4 人）
-	if g.day % 6 == 0 and g.staff.size() < 4 and g.money > 80000:
+	# 3. 买车：运力不足且现金充裕时购买（保留 25% 现金）；否则租车
+	var served := g.order_sys.served_cities(g)
+	var need_car := g.vehicles.size() < served.size() * 2 and g.vehicles.size() < 6
+	if need_car:
+		var van_cost: int = g.vehicle_sys.spec(0).get("cost", 60000)
+		if g.day % 2 == 0 and g.money > van_cost * 1.5:
+			var c := _random_city(true)
+			if c != null:
+				var vtype := Vehicle.Type.VAN
+				if _strategy == "truck":
+					vtype = Vehicle.Type.TRUCK
+				elif _strategy == "mix":
+					vtype = Vehicle.Type.TRUCK if g.vehicles.size() % 3 == 2 else Vehicle.Type.VAN
+				g.vehicle_sys.purchase(g, vtype, c.id)
+		elif g.day % 2 == 1:
+			# 租赁：不占用大量现金，适合前期扩张
+			if g.vehicles.size() < 3:
+				var c := _random_city(true)
+				if c != null:
+					g.vehicle_sys.lease(g, Vehicle.Type.VAN, c.id)
+	# 4. 招聘（最多 4 人，保留 30% 现金）
+	if g.day % 6 == 0 and g.staff.size() < 4 and g.money > 150000:
 		var st := Staff.new(g.uid("stf"), Staff.random_name(g.rng), Staff.Role.DRIVER, g.rng.randf_range(0.4, 0.9))
 		g.staff.append(st)
 		EventBus.hubs_changed.emit()
-	# 解锁可解锁科技
-	if g.day % 8 == 0 and g.money > 200000:
+	# 5. 解锁可解锁科技（保留 30% 现金）
+	if g.day % 8 == 0 and g.money > 300000:
 		for t in g.techs:
 			if not t.unlocked and g.tech_sys.can_unlock(g, t):
 				g.tech_sys.unlock(g, t)
 				break
+	# 6. 现金紧张时借款周转（避免破产）
+	if g.money < 200000 and g.debt < g.max_loan() * 0.8:
+		g.borrow(maxi(10000, int(g.max_loan() * 0.2)))
 
 
 func _random_city(any: bool) -> City:

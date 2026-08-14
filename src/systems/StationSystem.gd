@@ -3,7 +3,8 @@ class_name StationSystem
 
 ## 末端站点系统：建设、宣传升级，统计订单量与满意度。
 
-const STATION_COST := 3000
+const STATION_COST := 200000    # 末端站点基础造价（参考 TransRoute 20 万级）
+const STATION_UPGRADE_BASE := 60000   # 宣传升级基础价
 
 func process_day(game: GameManager) -> void:
 	for s in game.stations:

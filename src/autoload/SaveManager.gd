@@ -59,7 +59,7 @@ func migrate(data: Dictionary) -> void:
 
 func list_slots() -> Array:
 	ensure_dir()
-	var out := []
+	var out: Array = []
 	var dir := DirAccess.open(SAVE_DIR)
 	dir.list_dir_begin()
 	var fn := dir.get_next()
@@ -68,7 +68,7 @@ func list_slots() -> Array:
 			var slot := fn.substr(0, fn.length() - EXT.length())
 			var text := FileAccess.get_file_as_string(slot_path(slot))
 			var info = JSON.parse_string(text)
-			var meta := {"slot": slot, "saved_at": "", "day": 0, "company": "", "region": ""}
+			var meta: Dictionary = {"slot": slot, "saved_at": "", "day": 0, "company": "", "region": ""}
 			if info is Dictionary:
 				meta["saved_at"] = info.get("saved_at", "")
 				meta["day"] = info.get("day", 0)

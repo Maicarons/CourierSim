@@ -31,12 +31,13 @@ var _drag_last := Vector2.ZERO
 # 浮层控件
 var _action_bar: HBoxContainer
 var _info_card: PanelContainer
-var _info_label: Label
+var _info_label: RichTextLabel
 var _legend: Label
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	clip_contents = true   # _draw 绘制的海/陆地/城市/图例等超出自身 rect 时会被裁剪，不会溢出到相邻 UI（底栏、顶栏）
 	_font = ThemeDB.fallback_font
 	if _font == null:
 		_font = get_theme_font("font")
@@ -57,11 +58,12 @@ func _build_overlays() -> void:
 	_info_card.position = Vector2(10, 10)
 	_info_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_info_card.add_theme_stylebox_override("panel", _card_style(UI.CREAM))
-	_info_label = Label.new()
-	_info_label.add_theme_color_override("font_color", UI.INK)
-	_info_label.add_theme_font_size_override("font_size", 13)
+	_info_label = RichTextLabel.new()
+	_info_label.bbcode_enabled = true
+	_info_label.fit_content = true
+	_info_label.add_theme_color_override("default_color", UI.INK)
+	_info_label.add_theme_font_size_override("normal_font_size", 13)
 	_info_label.custom_minimum_size = Vector2(220, 0)
-	_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_info_card.add_child(_info_label)
 	add_child(_info_card)
 	_info_card.visible = false
@@ -131,17 +133,17 @@ func _load_land() -> void:
 	if not ResourceLoader.exists(land_path) or not ResourceLoader.exists(tex_path):
 		return
 	_land_tex = load(tex_path) as Texture2D
-	var d := JSON.parse_string(FileAccess.get_file_as_string(land_path))
+	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(land_path))
 	if typeof(d) != TYPE_DICTIONARY:
 		return
 	var bbox: Array = d.get("bbox", [])
 	if bbox.size() == 4:
 		_land_bbox = Rect2(bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1])
-	var reg := RegionManager.current
 	for poly in d.get("polys", []):
 		var ring := PackedVector2Array()
 		for p in poly:
-			ring.append(GeoMath.to_local_meters(p[1], p[0], reg.origin_lat, reg.origin_lon))
+			# 存经纬度 Vector2(lon, lat)，绘制时用 _bbox_to_screen 线性映射，与贴图同源
+			ring.append(Vector2(p[0], p[1]))
 		_coastlines.append(ring)
 
 
@@ -149,38 +151,42 @@ func _build_routes() -> void:
 	var reg := RegionManager.current
 	if reg == null:
 		return
+	_roads.clear()
+	_sea_routes.clear()
+	# 用 OSRM 烘焙的真实路网折线（<id>_routes.json）绘制公路，替代旧贝塞尔假路网。
+	# 每对城市取一条折线（无向去重），绘制为道路弧线。
+	reg.load_routes()
+	var drawn: Dictionary = {}
+	# 从城市对路由表收集：为每个城市连其最近 N 个有真实路线的城市
 	var cities := reg.cities
-	var max_road_km := 320.0
-	# 陆路：每个城市连接最近 2 个非港口间距离 < 阈值的城市（构成链状网络）
-	var used := {}
+	var max_links := 3
 	for i in cities.size():
 		var c := cities[i]
-		var pairs := []
+		var pairs: Array = []
 		for j in cities.size():
 			if i == j:
 				continue
-			var d := GeoMath.haversine(c.lat, c.lon, cities[j].lat, cities[j].lon) / 1000.0
-			pairs.append([j, d])
+			var r := reg.route_between(c.id, cities[j].id)
+			if r.is_empty():
+				continue
+			pairs.append([j, float(r.get("dist_km", 0.0))])
 		pairs.sort_custom(func(a, b): return a[1] < b[1])
 		var added := 0
 		for p in pairs:
-			if added >= 2:
+			if added >= max_links:
 				break
-			var key := [min(i, p[0]), max(i, p[0])]
-			if used.has(key):
+			var id_a: String = c.id
+			var id_b: String = cities[p[0]].id
+			var key := (id_a + "|" + id_b) if id_a < id_b else (id_b + "|" + id_a)
+			if drawn.has(key):
 				continue
-			if p[1] > max_road_km:
-				break
-			used[key] = true
-			var a := GeoMath.to_local_meters(c.lat, c.lon, reg.origin_lat, reg.origin_lon)
-			var b := GeoMath.to_local_meters(cities[p[0]].lat, cities[p[0]].lon, reg.origin_lat, reg.origin_lon)
-			var mid := (a + b) * 0.5
-			var perp := Vector2(-(b - a).y, (b - a).x).normalized()
-			var ctrl := mid + perp * (a.distance_to(b) * 0.08)
-			_roads.append({"a": a, "b": b, "ctrl": ctrl})
+			drawn[key] = true
+			var path_m: PackedVector2Array = reg.route_between(c.id, cities[p[0]].id).get("path_m", PackedVector2Array())
+			if path_m.size() >= 2:
+				_roads.append({"path_m": path_m})
 			added += 1
-	# 海运：有港口城市之间的近距离对
-	var ports := []
+	# 海运：有港口城市之间的近距离对（无路网数据的沿海对）
+	var ports: Array = []
 	for c in cities:
 		if c.has_port:
 			ports.append(c)
@@ -287,7 +293,7 @@ func _refresh_info() -> void:
 	if _selected == null:
 		return
 	var c := _selected
-	var tier_name := ["都会", "大城市", "中型", "小城"][clampi(c.tier - 1, 0, 3)]
+	var tier_name: String = ["都会", "大城市", "中型", "小城"][clampi(c.tier - 1, 0, 3)]
 	var has_hub := false
 	var has_station := false
 	for h in GameManager.hubs:
@@ -313,7 +319,7 @@ func _refresh_info() -> void:
 	if not has_hub and not has_station:
 		lines.append("设施：（无）")
 	_info_label.bbcode_enabled = true
-	_info_label.text = "\n".join(lines)
+	_info_label.bbcode_text = "\n".join(lines)
 
 
 func _rebuild_action_bar() -> void:
@@ -421,11 +427,11 @@ func _draw() -> void:
 	for r in _roads:
 		_draw_road(r)
 
-	# 5. 海岸描边（深色细线，叠在陆地边缘提升对比度）
+	# 5. 海岸描边（与陆地贴图同用线性 bbox 映射，确保贴合不漂移）
 	for ring in _coastlines:
 		var pts := PackedVector2Array()
 		for p in ring:
-			pts.append(to_screen(p))
+			pts.append(_bbox_to_screen(p))
 		pts.append(pts[0])
 		draw_polyline(pts, UI.INK, 2.0, true)
 
@@ -468,16 +474,25 @@ func _draw() -> void:
 			continue
 		var a := to_screen(RegionManager.local(oc))
 		var d := to_screen(RegionManager.local(dc))
+		# 订单路线沿真实 OSRM 折线绘制（无烘焙时退化为直线）
+		var r := RegionManager.current.route_between(oc.id, dc.id)
+		var path_m: PackedVector2Array = r.get("path_m", PackedVector2Array()) if not r.is_empty() else PackedVector2Array()
+		var screen_pts := PackedVector2Array()
+		if path_m.size() >= 2:
+			for p in path_m:
+				screen_pts.append(to_screen(p))
+		else:
+			screen_pts = PackedVector2Array([a, d])
 		if o.status == Order.Status.INTRANSIT:
-			draw_line(a, d, Color(0.25, 0.55, 0.95, 0.55), 4.0)
-			var len := a.distance_to(d)
-			var segs: int = maxi(int(len / 18.0), 1)
+			draw_polyline(screen_pts, Color(0.25, 0.55, 0.95, 0.55), 4.0)
+			var total := _polyline_len(screen_pts)
+			var segs: int = maxi(int(total / 18.0), 1)
 			for i in segs:
 				var t := fposmod(float(i) / float(segs) + _dash, 1.0)
-				var pp := a.lerp(d, t)
+				var pp := _polyline_point_at(screen_pts, t)
 				draw_circle(pp, 3.5, UI.ORANGE)
 		else:
-			_draw_dashed_line(a, d, UI.ORANGE, 2.5)
+			_draw_dashed_polyline(screen_pts, UI.ORANGE, 2.5)
 
 	# 9. 车辆
 	for v in GameManager.vehicles:
@@ -507,13 +522,16 @@ func _draw() -> void:
 
 
 func _draw_road(r: Dictionary) -> void:
-	var a := to_screen(r["a"])
-	var b := to_screen(r["b"])
-	var ctrl := to_screen(r["ctrl"])
+	var path_m: PackedVector2Array = r.get("path_m", PackedVector2Array())
+	if path_m.size() < 2:
+		return
+	var pts := PackedVector2Array()
+	for p in path_m:
+		pts.append(to_screen(p))
 	# 阴影底（深棕描边）
-	draw_polyline(PackedVector2Array([a, ctrl, b]), Color(0.18, 0.13, 0.10, 0.55), 6.0, true)
+	draw_polyline(pts, Color(0.18, 0.13, 0.10, 0.55), 6.0, true)
 	# 路面（奶油白）
-	draw_polyline(PackedVector2Array([a, ctrl, b]), Color(1.0, 0.95, 0.85, 0.95), 3.0, true)
+	draw_polyline(pts, Color(1.0, 0.95, 0.85, 0.95), 3.0, true)
 
 
 func _draw_sea_route(r: Dictionary) -> void:
@@ -529,19 +547,46 @@ func _draw_sea_route(r: Dictionary) -> void:
 		draw_circle(pp, 2.5, Color(1.0, 1.0, 1.0, 0.85))
 
 
-## 等距虚线（用于待分配订单路线）
-func _draw_dashed_line(a: Vector2, b: Vector2, color: Color, width: float) -> void:
-	var len := a.distance_to(b)
-	if len < 1.0:
+## 沿折线的等距虚线（用于待分配订单路线）
+func _draw_dashed_polyline(pts: PackedVector2Array, color: Color, width: float) -> void:
+	if pts.size() < 2:
 		return
-	var n := (b - a) / len
+	var total := _polyline_len(pts)
+	if total < 1.0:
+		return
 	var dash_len := 10.0
 	var gap_len := 6.0
 	var t := 0.0
-	while t < len:
-		var seg := min(dash_len, len - t)
-		draw_line(a + n * t, a + n * (t + seg), color, width)
-		t += dash_len + gap_len
+	while t < total:
+		var seg_end := minf(t + dash_len, total)
+		var a := _polyline_point_at(pts, t / total)
+		var b := _polyline_point_at(pts, seg_end / total)
+		draw_line(a, b, color, width)
+		t = seg_end + gap_len
+
+## 折线总长（屏幕坐标）
+func _polyline_len(pts: PackedVector2Array) -> float:
+	var total := 0.0
+	for i in range(1, pts.size()):
+		total += pts[i].distance_to(pts[i - 1])
+	return total
+
+## 按弧长比例取折线上的点
+func _polyline_point_at(pts: PackedVector2Array, t: float) -> Vector2:
+	if pts.size() < 2:
+		return pts[0] if pts.size() == 1 else Vector2.ZERO
+	var total := _polyline_len(pts)
+	if total <= 0.001:
+		return pts[0]
+	var target := t * total
+	var acc := 0.0
+	for i in range(1, pts.size()):
+		var seg := pts[i].distance_to(pts[i - 1])
+		if acc + seg >= target or i == pts.size() - 1:
+			var local := 0.0 if seg <= 0.0 else (target - acc) / seg
+			return pts[i - 1].lerp(pts[i], clampf(local, 0.0, 1.0))
+		acc += seg
+	return pts[pts.size() - 1]
 
 
 func _draw_building_marker(p: Vector2, tex: Texture2D) -> void:
@@ -613,6 +658,17 @@ func _screen_rect_of_bbox(bbox: Rect2) -> Rect2:
 		r.position.y += r.size.y
 		r.size.y = -r.size.y
 	return r
+
+## 经纬度点 → 屏幕坐标，使用与陆地贴图完全一致的线性 bbox 映射。
+## （贴图是 PIL 按 bbox 线性光栅化的，若用等距圆柱投影画描边/城市，会与贴图错位。）
+func _bbox_to_screen(lng_lat: Vector2) -> Vector2:
+	if _land_bbox.size.x <= 0 or _land_bbox.size.y <= 0:
+		return Vector2.ZERO
+	var t := Vector2(
+		(lng_lat.x - _land_bbox.position.x) / _land_bbox.size.x,
+		(lng_lat.y - _land_bbox.position.y) / _land_bbox.size.y)
+	var tr := _screen_rect_of_bbox(_land_bbox)
+	return tr.position + Vector2(t.x * tr.size.x, t.y * tr.size.y)
 
 
 ## 局部米制坐标 → 屏幕像素（y 轴翻转）

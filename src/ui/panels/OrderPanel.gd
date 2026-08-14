@@ -21,7 +21,7 @@ func build() -> void:
 
 
 func _build_summary() -> void:
-	var counts := {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
+	var counts: Dictionary = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
 	for o in GameManager.orders:
 		counts[o.status] = counts.get(o.status, 0) + 1
 	var row := HBoxContainer.new()
@@ -43,7 +43,7 @@ func _build_summary() -> void:
 	auto.add_theme_color_override("font_color", UI.INK)
 	auto.add_theme_font_size_override("font_size", 13)
 	auto.text = Localization.t("order.auto_assign")
-	Tooltips.attach(auto, Localization.t("tip.auto_assign"))
+	Tooltips.register(auto, Localization.t("tip.auto_assign"))
 	auto.toggled.connect(func(on: bool):
 		GameManager.order_sys.auto_assign_enabled = on
 		EventBus.toast.emit(Localization.t("toast.auto_assign") % (
@@ -57,7 +57,7 @@ func _add_chip(parent: Control, label: String, count: int, color: Color) -> void
 
 
 func _build_group(status: int, group_title: String, accent: Color, icon: Texture2D) -> void:
-	var items := []
+	var items: Array = []
 	for o in GameManager.orders:
 		if o.status == status:
 			items.append(o)

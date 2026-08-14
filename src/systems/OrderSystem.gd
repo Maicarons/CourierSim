@@ -35,10 +35,33 @@ func compute_spawn(game: GameManager) -> int:
 	var n := int(round(base * mult * (0.6 + game.rng.randf() * 0.6)))
 	return max(1, n)
 
+## 生单城市池：只从「已建站（station）或已建仓（hub）」的城市中选。
+## 未建任何设施的城市不产生订单（玩家必须建设网络才能接单）。
+func served_cities(game: GameManager) -> Array[City]:
+	var region: Region = RegionManager.current
+	var ids: Dictionary = {}
+	for s in game.stations:
+		ids[s.city_id] = true
+	for h in game.hubs:
+		ids[h.city_id] = true
+	var out: Array[City] = []
+	for c in region.cities:
+		if ids.has(c.id):
+			out.append(c)
+	return out
+
 func weighted_city(game: GameManager) -> City:
 	var region: Region = RegionManager.current
 	var pool: Array[City] = []
-	for c in region.cities:
+	var served := served_cities(game)
+	if served.is_empty():
+		# 网络为空：退化为按需求选（教程前期首府建仓后可避免）
+		var best: City = region.cities[0]
+		for c in region.cities:
+			if c.base_demand > best.base_demand:
+				best = c
+		return best
+	for c in served:
 		var w := int(max(1, c.base_demand * 10))
 		# 有站点的城市权重更高
 		for s in game.stations:
@@ -46,22 +69,18 @@ func weighted_city(game: GameManager) -> City:
 				w += 8 * (s.marketing_level + 1)
 		for i in w:
 			pool.append(c)
-	if pool.is_empty():
-		# 退化为按需求选
-		var best: City = region.cities[0]
-		for c in region.cities:
-			if c.base_demand > best.base_demand:
-				best = c
-		return best
 	return pool[game.rng.randi() % pool.size()]
 
 func spawn_one(game: GameManager) -> void:
 	var region: Region = RegionManager.current
+	var served := served_cities(game)
+	if served.size() < 2:
+		return   # 至少要 2 个已建站城市才能产生跨城订单
 	var origin := weighted_city(game)
 	var dest := origin
 	var guard := 0
-	while dest == origin and guard < 20:
-		dest = region.cities[game.rng.randi() % region.cities.size()]
+	while dest == origin and guard < 30:
+		dest = served[game.rng.randi() % served.size()]
 		guard += 1
 	if dest == origin:
 		return
@@ -83,23 +102,29 @@ func spawn_one(game: GameManager) -> void:
 	if cargo == CargoType.Type.HAZMAT:
 		weight = 50.0 + game.rng.randf() * 200.0
 	var o := Order.new(game.uid("ord"), origin.id, dest.id, cargo, weight)
-	var dist := GeoMath.city_distance(origin, dest)
+	# 真实里程优先（OSRM），无烘焙数据回退 Haversine×绕路
+	var dist := RegionManager.current.real_distance_m(origin.id, dest.id)
 	o.distance_m = dist
-	o.distance_days = GeoMath.travel_days(dist, 80.0)
+	var dur_h := RegionManager.current.real_duration_h(origin.id, dest.id, 80.0)
+	o.distance_days = dur_h / 24.0
 	o.reward = reward_for(game, dist, cargo, weight)
 	o.created_day = game.day
-	var buffer := 4
+	# 时限：行驶天数 + 站点处理缓冲（小时制更精确）
+	var buffer_h := 24.0   # 基础 1 天处理时间
 	if cargo == CargoType.Type.INTERNATIONAL:
-		buffer = 6
-	o.deadline_day = game.day + int(ceil(o.distance_days)) + buffer
+		buffer_h = 36.0
+	o.deadline_day = game.day + int(ceil(o.distance_days + buffer_h / 24.0))
 	o.status = Order.Status.PENDING
 	game.orders.append(o)
 
 func reward_for(game: GameManager, distance_m: float, cargo: int, weight: float) -> int:
 	var km := distance_m / 1000.0
-	var base := km * (2.2 + weight * 0.12)
+	# 运费按「吨·公里」计价（参考 TransRoute rate.costPerTonKm 量级）：
+	# 基础费率 45 元/吨·km，叠加重量与货种倍率。站点/仓造价高企后收益需与之匹配。
+	var tons := weight / 1000.0
+	var base := km * tons * 45.0 * (1.0 + weight * 0.004)
 	var r: int = int(base * CargoType.reward_mult(cargo) * game.modifiers.get("reward_mult", 1.0))
-	return max(50, r)
+	return max(800, r)
 
 ## 车队中是否存在能运该货种的车辆
 func _has_carrier(game: GameManager, cargo: int) -> bool:
@@ -167,11 +192,18 @@ func assign_order(game: GameManager, v: Vehicle, o: Order) -> bool:
 	var dc: City = RegionManager.current.get_city(o.dest_id)
 	if oc == null or dc == null:
 		return false
-	var from: Vector2 = RegionManager.local(oc)
-	var to: Vector2 = RegionManager.local(dc)
-	var dist := GeoMath.city_distance(oc, dc)
-	var days := GeoMath.travel_days(dist, v.speed_kmh)
-	v.start_trip(from, to, days)
+	# 真实路线折线（OSRM）：车辆沿真实公路走向移动，不再两点直线瞬移
+	var r := RegionManager.current.route_between(oc.id, dc.id)
+	var path_m: PackedVector2Array = r.get("path_m", PackedVector2Array()) if not r.is_empty() else PackedVector2Array()
+	if path_m.size() < 2:
+		# 无烘焙数据：退化为直线（仍按真实里程算耗时）
+		var from: Vector2 = RegionManager.local(oc)
+		var to: Vector2 = RegionManager.local(dc)
+		v.start_trip(from, to, GeoMath.travel_days(RegionManager.current.real_distance_m(oc.id, dc.id), v.speed_kmh))
+	else:
+		var dist_m: float = float(r.get("dist_km", 0.0)) * 1000.0
+		var days := GeoMath.travel_days(dist_m, v.speed_kmh)
+		v.start_trip_path(path_m, days)
 	v.current_order_id = o.id
 	o.assigned_vehicle_id = v.id
 	o.status = Order.Status.INTRANSIT

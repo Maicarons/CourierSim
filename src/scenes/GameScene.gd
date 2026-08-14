@@ -44,23 +44,36 @@ var bottom_log: Label
 var objective_card: PanelContainer
 var objective_label: Label
 var dialogue: DialogueBox
+var dialogue_layer: CanvasLayer
 var tutorial: TutorialSystem
 var pause_layer: CanvasLayer
 var pause_menu: PauseMenu
 var achievement_banner: AchievementBanner
+var hud_layer: CanvasLayer
 var current_tab := "map"
 var log_lines: Array[String] = []
 var _dlg_queue: Array[Dictionary] = []
 
 
 func _ready() -> void:
+	# 防御：无进行中的游戏（直接运行 GameScene / 状态丢失）时回主菜单。
+	# 必须延迟到本帧结束（_ready 期间不能卸载自身场景）。
+	if GameManager.company_name == "":
+		get_tree().call_deferred("change_scene_to_file", "res://src/scenes/MainMenu.tscn")
+		return
 	tutorial = TutorialSystem.new()
 	add_child(tutorial)
 	dialogue = DialogueBox.new()
-	add_child(dialogue)
+	dialogue_layer = CanvasLayer.new()
+	dialogue_layer.layer = 30   # 普通 UI(0) / HUD(25) 之上，暂停(60) 之下
+	add_child(dialogue_layer)
+	dialogue_layer.add_child(dialogue)
 	pause_layer = CanvasLayer.new()
 	pause_layer.layer = 60
 	add_child(pause_layer)
+	hud_layer = CanvasLayer.new()
+	hud_layer.layer = 25
+	add_child(hud_layer)
 	pause_menu = PauseMenu.new()
 	pause_layer.add_child(pause_menu)
 	pause_menu.settings_requested.connect(_on_settings)
@@ -75,6 +88,7 @@ func _ready() -> void:
 	EventBus.toast.connect(_on_toast)
 	EventBus.game_over.connect(_on_game_over)
 	EventBus.day_changed.connect(refresh_top)
+	EventBus.hour_changed.connect(_on_hour_changed)
 	EventBus.money_changed.connect(refresh_top)
 	EventBus.vehicles_changed.connect(_on_state_changed)
 	EventBus.hubs_changed.connect(_on_state_changed)
@@ -92,12 +106,12 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	for ch in get_children():
-		if ch == tutorial or ch == dialogue or ch == pause_layer:
+		if ch == tutorial or ch == dialogue_layer or ch == pause_layer or ch == hud_layer:
 			continue
 		ch.queue_free()
 	var main := VBoxContainer.new()
-	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(main)
+	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	_build_top_bar(main)
 
@@ -129,7 +143,7 @@ func _build_top_bar(parent: Control) -> void:
 	top_bar.add_child(UI.spacer())
 
 	# 图标化顶栏控件：纯图标 + tooltip
-	var speed_paused := TimeSystem.SPEEDS[TimeSystem.speed_index] == 0
+	var speed_paused: bool = TimeSystem.SPEEDS[TimeSystem.speed_index] == 0
 	top_bar.add_child(UI.icon_only_button(
 		Assets.get_image("ui_pause" if speed_paused else "ui_play"),
 		Localization.t("tip.speed_pause"),
@@ -166,11 +180,17 @@ func _add_stat(parent: Control, text: String, icon: Texture2D, color: Color) -> 
 func _build_left_tabs(parent: Control) -> void:
 	var tab_panel := UI.card()
 	tab_panel.custom_minimum_size = Vector2(96, 0)
-	tab_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	tab_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	parent.add_child(tab_panel)
+	# 用滚动容器包裹 tab 列表：按钮过多时不撑大外层 VBox（否则整体溢出视口）
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	tab_panel.add_child(scroll)
 	tab_col = VBoxContainer.new()
+	tab_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tab_col.add_theme_constant_override("separation", 4)
-	tab_panel.add_child(tab_col)
+	scroll.add_child(tab_col)
 	# 顶部分隔：留白
 	var sp := Control.new()
 	sp.custom_minimum_size = Vector2(0, 6)
@@ -204,13 +224,18 @@ func _build_center(parent: Control) -> void:
 	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	parent.add_child(center)
 
+	# 地图/列表面板统一用卡片容器，留出边距，避免贴边铺满
+	var map_card := UI.card()
+	map_card.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 12)
+	center.add_child(map_card)
+
 	map_view = MapView.new()
 	map_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	center.add_child(map_view)
+	map_card.add_child(map_view)
 
 	list_panel = ScrollContainer.new()
 	list_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	center.add_child(list_panel)
+	map_card.add_child(list_panel)
 
 
 func _build_objective_hud() -> void:
@@ -240,7 +265,7 @@ func _build_objective_hud() -> void:
 	col.add_child(objective_label)
 	# 点击卡片重看教程
 	objective_card.gui_input.connect(_on_objective_card_input)
-	add_child(objective_card)
+	hud_layer.add_child(objective_card)
 	objective_card.visible = false
 
 
@@ -279,6 +304,7 @@ func _build_bottom_log(parent: Control) -> void:
 	bottom_log = Label.new()
 	bottom_log.custom_minimum_size = Vector2(0, 44)
 	bottom_log.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	bottom_log.add_theme_color_override("font_color", UI.INK)
 	bottom_log.add_theme_font_size_override("font_size", 12)
 	log_panel.add_child(bottom_log)
 
@@ -304,12 +330,16 @@ func show_tab(tab: String) -> void:
 
 
 func refresh_top(_arg = null) -> void:
-	lbl_day.text = "Day %d" % GameManager.day
+	lbl_day.text = "Day %d %02d:00" % [GameManager.day, GameManager.hour_of_day]
 	lbl_money.text = "%d" % GameManager.money
 	lbl_rep.text = "%d" % int(GameManager.reputation)
 	lbl_region.text = RegionManager.current.display_name() if RegionManager.current else "-"
 	lbl_share.text = "%d%%" % int(GameManager.competitor_sys.player_share() * 100.0)
 	tutorial.check()
+
+func _on_hour_changed(_h: int) -> void:
+	lbl_day.text = "Day %d %02d:00" % [GameManager.day, GameManager.hour_of_day]
+	map_view.queue_redraw()
 
 
 func _on_state_changed() -> void:
@@ -363,8 +393,8 @@ func _show_dialogue_for_beat(beat: Dictionary) -> void:
 	var text: String = Localization.t(beat.get("text_key", ""))
 	if text == beat.get("text_key", "") or text.strip_edges() == "":
 		return
-	var lines := [text]
-	var icon := Assets.get_image(beat.get("icon", ""))
+	var lines: Array[String] = [text]
+	var icon: Texture2D = Assets.get_image(beat.get("icon", ""))
 	dialogue.show_dialogue(Localization.t(beat.get("speaker_key", "")), icon, lines,
 		_on_dialogue_closed)
 

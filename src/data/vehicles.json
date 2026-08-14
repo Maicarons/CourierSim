@@ -8,7 +8,8 @@
     "cost": 60000,
     "fuel_per_km": 0.6,
     "maintenance_per_day": 80,
-    "cap": 0
+    "cap": 0,
+    "lease_daily": 1200
   },
   {
     "type": 1,
@@ -19,7 +20,8 @@
     "cost": 140000,
     "fuel_per_km": 1.6,
     "maintenance_per_day": 200,
-    "cap": 4
+    "cap": 4,
+    "lease_daily": 2800
   },
   {
     "type": 2,
@@ -30,7 +32,8 @@
     "cost": 260000,
     "fuel_per_km": 2.0,
     "maintenance_per_day": 280,
-    "cap": 3
+    "cap": 3,
+    "lease_daily": 5200
   },
   {
     "type": 3,
@@ -41,7 +44,8 @@
     "cost": 90000,
     "fuel_per_km": 0.2,
     "maintenance_per_day": 60,
-    "cap": 0
+    "cap": 0,
+    "lease_daily": 1800
   },
   {
     "type": 4,
@@ -52,7 +56,8 @@
     "cost": 2500000,
     "fuel_per_km": 12.0,
     "maintenance_per_day": 3000,
-    "cap": 15
+    "cap": 15,
+    "lease_daily": 50000
   },
   {
     "type": 5,
@@ -63,6 +68,7 @@
     "cost": 4000000,
     "fuel_per_km": 6.0,
     "maintenance_per_day": 4000,
-    "cap": 15
+    "cap": 15,
+    "lease_daily": 80000
   }
 ]

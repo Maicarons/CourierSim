@@ -7,6 +7,8 @@ signal stations_changed
 signal orders_changed
 signal money_changed(amount: int)
 signal day_changed(day: int)
+signal hour_changed(hour: int)
+signal debt_changed(debt: int)
 signal reputation_changed(value: float)
 signal map_updated
 signal toast(message: String)

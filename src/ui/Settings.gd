@@ -143,14 +143,14 @@ func _show_section(section: String) -> void:
 	vb.add_child(UI.spacer())
 
 
-func _fill_achievements(parent: Control) -> void:
+func _fill_achievements(container: Control) -> void:
 	var progress := Label.new()
 	var total := GameManager.ach_sys.defs.size() if GameManager.ach_sys != null else 0
 	var unlocked := GameManager.achievements.size()
 	progress.text = Localization.t("ach.progress") % [unlocked, total]
 	progress.add_theme_color_override("font_color", UI.GREEN)
 	progress.add_theme_font_size_override("font_size", 15)
-	parent.add_child(progress)
+	container.add_child(progress)
 
 	if GameManager.ach_sys == null:
 		return
@@ -158,7 +158,7 @@ func _fill_achievements(parent: Control) -> void:
 		var id: String = d.get("id", "")
 		var done: bool = GameManager.achievements.has(id)
 		var name := GameManager.ach_sys.display_name(d)
-		var desc := d.get("desc_en", d.get("desc", "")) if Localization.is_en() else d.get("desc", "")
+		var desc: String = d.get("desc_en", d.get("desc", "")) if Localization.is_en() else d.get("desc", "")
 		var icon := Assets.get_image(d.get("icon", ""))
 		var actions: Array = []
 		var tag := UI.status_chip(
@@ -170,12 +170,12 @@ func _fill_achievements(parent: Control) -> void:
 		var hb := HBoxContainer.new()
 		hb.add_child(tag)
 		row.find_child("HBoxContainer", true, false).add_child(hb)
-		parent.add_child(row)
+		container.add_child(row)
 
 
-func _fill_audio(parent: Control) -> void:
+func _fill_audio(container: Control) -> void:
 	for bus in ["Master", AudioManager.BUS_BGM, AudioManager.BUS_SFX]:
-		parent.add_child(_slider_row(bus))
+		container.add_child(_slider_row(bus))
 
 
 func _slider_row(bus: String) -> Control:
@@ -203,11 +203,10 @@ func _slider_row(bus: String) -> Control:
 	row.add_child(num)
 	sl.value_changed.connect(func(v): AudioManager.set_bus_volume(bus, v); num.text = "%d%%" % int(v * 100))
 	Tooltips.register(row, "%s %s" % [bus, Localization.t("set.audio.vol_tip")])
-	parent.add_child(row)
 	return row
 
 
-func _fill_display(parent: Control) -> void:
+func _fill_display(container: Control) -> void:
 	var fs_btn := Button.new()
 	var is_fullscreen := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 	fs_btn.text = Localization.t("set.display.fullscreen_on" if is_fullscreen else "set.display.fullscreen_off")
@@ -221,9 +220,9 @@ func _fill_display(parent: Control) -> void:
 	fs_btn.pressed.connect(_toggle_fullscreen.bind(fs_btn))
 	AudioManager.attach_click(fs_btn)
 	Tooltips.register(fs_btn, Localization.t("set.display.fullscreen_tip"))
-	parent.add_child(fs_btn)
+	container.add_child(fs_btn)
 
-	parent.add_child(UI.label(Localization.t("set.display.note"), 400))
+	container.add_child(UI.label(Localization.t("set.display.note"), 400))
 
 
 func _toggle_fullscreen(btn: Button) -> void:
@@ -233,15 +232,15 @@ func _toggle_fullscreen(btn: Button) -> void:
 	btn.text = Localization.t("set.display.fullscreen_on" if target == DisplayServer.WINDOW_MODE_FULLSCREEN else "set.display.fullscreen_off")
 
 
-func _fill_language(parent: Control) -> void:
+func _fill_language(container: Control) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
-	parent.add_child(row)
+	container.add_child(row)
 	for code in [["zh_CN", "中文", "cn"], ["en_US", "English", "en"]]:
 		var btn := Button.new()
 		btn.text = code[1]
 		btn.custom_minimum_size = Vector2(140, 42)
-		var sel := Localization.get_locale() == code[0]
+		var sel: bool = Localization.get_locale() == code[0]
 		var color := UI.GREEN if sel else UI.CREAM
 		btn.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0) if sel else UI.INK)
 		btn.add_theme_stylebox_override("normal", UI._cartoon_style(color, UI.INK, 10, 14))
@@ -259,10 +258,10 @@ func _on_lang_choose(code: String) -> void:
 	_build()
 
 
-func _fill_saves(parent: Control) -> void:
+func _fill_saves(container: Control) -> void:
 	var top_row := HBoxContainer.new()
 	top_row.add_theme_constant_override("separation", 8)
-	parent.add_child(top_row)
+	container.add_child(top_row)
 	var refresh_btn := UI.icon_button(Localization.t("set.saves.refresh"),
 		Assets.get_image("ui_arrow_right"), _show_section.bind("saves"),
 		Localization.t("set.saves.refresh"))
@@ -274,7 +273,7 @@ func _fill_saves(parent: Control) -> void:
 
 	var slots := SaveManager.list_slots()
 	if slots.is_empty():
-		parent.add_child(UI.label(Localization.t("set.saves.empty"), 400))
+		container.add_child(UI.label(Localization.t("set.saves.empty"), 400))
 		return
 	for s in slots:
 		var row := PanelContainer.new()
@@ -303,7 +302,7 @@ func _fill_saves(parent: Control) -> void:
 		hb.add_child(UI.icon_button(Localization.t("set.saves.delete"),
 			Assets.get_image("ui_trash"), _on_delete_slot.bind(slot_name),
 			Localization.t("set.saves.delete")))
-		parent.add_child(row)
+		container.add_child(row)
 
 
 func _save_now() -> void:

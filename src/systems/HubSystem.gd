@@ -3,7 +3,7 @@ class_name HubSystem
 
 ## 中转仓库系统：建设、升级，每日重置吞吐计数。
 
-const HUB_BASE_COST := 8000
+const HUB_BASE_COST := 600000   # 中转仓库基础造价（参考 TransRoute 中转枢纽 250 万级，取其下级）
 const HUB_BASE_CAP := 200
 
 func process_day(game: GameManager) -> void:
